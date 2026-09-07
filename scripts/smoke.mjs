@@ -113,6 +113,15 @@ async function main() {
 
   // ---------- 管理端邀请码 ----------
   step('邀请码管理');
+  // 越权护栏：班委可发学生码，但班委码/维护者码仅 owner 可发
+  await signIn(identities.comm.root, identities.comm.password);
+  const stuByComm = await call('POST', '/api/admin/invites', { type: 'student', count: 1 });
+  ok('班委可生成学生码', stuByComm.status === 201, JSON.stringify(stuByComm.json));
+  const commByComm = await call('POST', '/api/admin/invites', { type: 'committee', count: 1 });
+  ok('班委生成班委码被拒', commByComm.status === 403, JSON.stringify(commByComm.json));
+  const ownerByComm = await call('POST', '/api/admin/invites', { type: 'owner', count: 1 });
+  ok('班委生成 owner 码被拒', ownerByComm.status === 403, JSON.stringify(ownerByComm.json));
+
   await signIn(identities.owner.root, identities.owner.password);
   const invList = await call('GET', '/api/admin/invites');
   ok('邀请码列表可查', invList.status === 200 && invList.json?.items?.length >= 4, JSON.stringify(invList.json));
@@ -241,6 +250,10 @@ async function main() {
 
   const banByComm = await call('POST', `/api/admin/members/${targetMemberId}/ban`, { banned: true });
   ok('班委无权封禁', banByComm.status === 403);
+
+  // 班委也不能借举报处理走封禁旁路（与 setBan 同一权限口径）
+  const handleBanByComm = await call('POST', `/api/admin/reports/${rpt.json.id}/handle`, { action: 'ban' });
+  ok('班委经举报处理执行封禁被拒', handleBanByComm.status === 403, JSON.stringify(handleBanByComm.json));
 
   await signIn(identities.owner.root, identities.owner.password);
   const ban = await call('POST', `/api/admin/members/${targetMemberId}/ban`, { banned: true });

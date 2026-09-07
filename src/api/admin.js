@@ -4,8 +4,10 @@
 // 管理端：邀请码、举报处理、封禁、内容隐藏、审计日志。
 //
 // 权限分层（匿名性的护栏所在）：
-//   - 班委：生成邀请码、处理举报、回复与发公告
-//   - 维护者：额外可查全量审计日志、执行封禁、校验哈希链
+//   - 学生码：班委可生成（日常发群注册用）
+//   - 班委码/维护者码：仅站点维护者可生成（权力授予最小化，班委不得自行扩权）
+//   - 班委：处理举报（隐藏/驳回）、回复与发公告；无封禁权
+//   - 维护者：全量审计日志、校验哈希链、封禁/解封、经举报处理执行封禁
 //   - 举报详情是根假名唯一被允许出现在界面上的地方（封禁必须知道封谁）；
 //     日常反馈列表绝不出现根假名。
 
@@ -22,9 +24,14 @@ function inviteCode() {
 }
 
 export async function createInvites(request, env) {
+  // 先完成基础鉴权（至少班委），再按邀请码类型收紧：
+  // 学生码班委可发；班委码与维护者码仅 owner 可发。
   const staff = await requireStaff(request, env);
   const body = await readJson(request);
   const type = oneOf(body.type, INVITE_TYPES, '邀请码类型');
+  if (type !== 'student' && staff.role !== 'owner') {
+    return fail(403, 'forbidden', '仅站点维护者可生成班委码与维护者码');
+  }
   const count = Math.min(50, Math.max(1, Number(body.count) || 1));
   const duty = type === 'committee' ? strField(body, 'duty', { min: 1, max: 20 }) : null;
 
@@ -135,6 +142,11 @@ export async function handleReport(request, env, url, params) {
   const id = intParam(params.id, '举报编号');
   const body = await readJson(request);
   const action = oneOf(body.action, ['dismiss', 'hide', 'ban'], '处理动作');
+  // 封禁是最高等级处置：班委只能隐藏/驳回，执行封禁仅限维护者
+  // （与 setBan 同一权限口径，防止班委借举报处理绕过封禁权限）
+  if (action === 'ban' && staff.role !== 'owner') {
+    return fail(403, 'forbidden', '仅站点维护者可执行封禁');
+  }
 
   const report = await env.DB.prepare(
     'SELECT id, target_type, target_id, handled FROM reports WHERE id = ?',

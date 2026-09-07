@@ -39,13 +39,23 @@ export async function requireStaff(request, env) {
   return member;
 }
 
-/** 站点维护者：唯一可查看全量审计日志与执行封禁的身份 */
+/** 站点维护者：唯一可查看全量审计日志、生成班委码/维护者码、执行封禁的身份 */
 export async function requireOwner(request, env) {
   const member = await requireMember(request, env);
   if (member.role !== 'owner') throw new ApiError(403, 'forbidden', '仅站点维护者可操作');
   return member;
 }
 
+// 授权矩阵（所有管理端接口的权限口径）：
+//   操作                      班委       维护者
+//   学生码生成                  ✓          ✓
+//   班委码/维护者码生成          ✗          ✓
+//   公告/班费/决议管理           ✓          ✓
+//   举报处理（隐藏/驳回）        ✓          ✓
+//   举报处理（封禁）/ setBan    ✗          ✓
+//   反馈隐藏                    ✓          ✓
+//   审计日志                   本人       全量
+//   哈希链校验                 ✗          ✓
 export const requireCommittee = requireStaff;
 
 /** 对外暴露的成员视图：绝不包含 password_hash / recovery_hash */

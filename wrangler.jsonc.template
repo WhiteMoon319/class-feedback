@@ -1,0 +1,71 @@
+// Cloudflare Workers 配置模板（真实资源 ID 不入库）。
+//
+// 使用方式：
+//   1. 复制 .env.example 为根目录 .env，填入 CLASSFEEDBACK_D1_ID
+//      （获取方式：npx wrangler d1 list）
+//   2. 运行 npm run cf:config（npm run build / cf:dev / cf:deploy 均会自动先执行），
+//      脚本把 ${...} 占位符替换为真实值，生成本地 wrangler.jsonc（已被 .gitignore 忽略）
+//
+// 未配置 .env 时保留占位符，本地 miniflare 可正常启动；
+// wrangler deploy 会因资源 ID 无效而明确失败，不会误指向其他资源。
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "class-feedback",
+  "main": "dist/worker.mjs",
+  "compatibility_date": "2025-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // 每日 03:00 UTC+8 由 0 点档清理过期邀请码与限流计数（见 src/cron.js）
+  "triggers": {
+    "crons": ["0 19 * * *"]
+  },
+
+  // run_worker_first：所有请求先进 Worker，/api/* 由 Worker 处理，
+  // 其余回落到 ASSETS.fetch（等价于 YHG 里 resource/ 优先于 Functions 的行为）
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "run_worker_first": true,
+    "html_handling": "auto-trailing-slash"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "class-feedback-db",
+      "database_id": "${CLASSFEEDBACK_D1_ID}",
+      "migrations_dir": "./db/migrations"
+    }
+  ],
+
+  "r2_buckets": [
+    {
+      "binding": "MEDIA",
+      "bucket_name": "class-feedback-media"
+    }
+  ],
+
+  "vars": {
+    "SITE_NAME": "班务平台",
+    "SITE_URL": "https://class.whitemoon319.xyz",
+    "LOGIN_RATE_LIMIT_MAX": 10,
+    "LOGIN_RATE_LIMIT_WINDOW": 300,
+    "SUBMIT_RATE_LIMIT_MAX": 10,
+    "SUBMIT_RATE_LIMIT_WINDOW": 3600,
+    "ATTACHMENT_MAX_BYTES": 5242880
+  },
+
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": false,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
+  }
+}

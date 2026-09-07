@@ -37,7 +37,7 @@
     $('#list').insertAdjacentHTML('beforeend', items.map((a) => `
       <div class="card">
         <div class="item-head">
-          <span class="item-title">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</span>
+          <a class="item-title" href="/announcement?id=${a.id}">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</a>
           ${categoryBadge(a)}
         </div>
         <div class="card-meta" style="margin:var(--space-2) 0">
@@ -45,11 +45,9 @@
           <span>${fmtTime(a.createdAt)}</span>
           ${a.amount ? `<span class="amount-${a.direction === 'expense' ? 'expense' : 'income'}">${a.direction === 'expense' ? '支出' : '收入'} ¥${escapeHtml(a.amount.replace('-', ''))}</span>` : ''}
         </div>
-        <p style="margin:0;white-space:pre-wrap">${escapeHtml(a.body)}</p>
+        <p style="margin:0;color:var(--c-text-2);white-space:pre-wrap">${escapeHtml((a.body || '').slice(0, 120))}${(a.body || '').length > 120 ? '…' : ''}</p>
         ${a.attachments?.length ? `
-          <div class="attachments">
-            ${a.attachments.map((att) => `<a href="${att.url}" target="_blank" rel="noopener"><img src="${att.url}" alt="${escapeHtml(att.filename)}" loading="lazy"></a>`).join('')}
-          </div>` : ''}
+          <div class="card-meta" style="margin-top:var(--space-2)"><span>📎 ${a.attachments.length} 个附件</span></div>` : ''}
       </div>`).join(''));
   }
 

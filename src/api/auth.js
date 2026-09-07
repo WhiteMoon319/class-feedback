@@ -143,7 +143,10 @@ export async function login(request, env) {
       max: Number(env.LOGIN_RATE_LIMIT_MAX) || 10,
       windowSec: Number(env.LOGIN_RATE_LIMIT_WINDOW) || 300,
     }),
-    consume(env.DB, `login:name:${await sha256Hex(name.toLowerCase())}`, { max: 5, windowSec: 900 }),
+    consume(env.DB, `login:name:${await sha256Hex(name.toLowerCase())}`, {
+      max: Number(env.LOGIN_NAME_RATE_LIMIT_MAX) || 5,
+      windowSec: Number(env.LOGIN_NAME_RATE_LIMIT_WINDOW) || 900,
+    }),
   ]);
   if (!byIp.ok || !byName.ok) {
     const wait = Math.max(byIp.retryAfter, byName.retryAfter);

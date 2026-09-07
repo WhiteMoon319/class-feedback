@@ -301,6 +301,58 @@ async function main() {
   ok('重置后旧会话立即失效', meAfterReset.status === 200 && meAfterReset.json?.member === null, `member=${JSON.stringify(meAfterReset.json?.member)}`);
   jar = stu2NewSession;
 
+  // ---------- 投票 ----------
+  step('投票');
+  await signIn(identities.comm.root, identities.comm.password);
+  const future = new Date(Date.now() + 24 * 3600_000).toISOString().replace('T', ' ').slice(0, 19);
+  const past = new Date(Date.now() - 3600_000).toISOString().replace('T', ' ').slice(0, 19);
+  const poll1 = await call('POST', '/api/polls', {
+    title: '下周三是否组织班级聚餐', description: '费用 AA，人均约 50 元。',
+    options: ['支持', '反对', '弃权'], expiresAt: future, hideResults: false,
+  });
+  ok('班委发起投票', poll1.status === 201, JSON.stringify(poll1.json));
+  const pollHidden = await call('POST', '/api/polls', {
+    title: '隐藏票数测试', description: '', options: ['A 方案', 'B 方案'],
+    expiresAt: future, hideResults: true,
+  });
+  ok('隐藏票数投票可创建', pollHidden.status === 201, JSON.stringify(pollHidden.json));
+  const pollBad = await call('POST', '/api/polls', {
+    title: '选项太少', options: ['只有一项'], expiresAt: future,
+  });
+  ok('选项少于 2 个被拒', pollBad.status === 400, JSON.stringify(pollBad.json));
+  const pollExpired = await call('POST', '/api/polls', {
+    title: '已经截止的投票', options: ['是', '否'], expiresAt: past,
+  });
+  ok('过去的截止时间被拒', pollExpired.status === 400, JSON.stringify(pollExpired.json));
+
+  // 注意：此处 stu2 密码已被「恢复码重置」章节改为 brand-new-pass
+  await signIn(identities.stu2.root, 'brand-new-pass');
+  const vote1 = await call('POST', `/api/polls/${poll1.json.id}/vote`, { optionIndex: 0 });
+  ok('学生投票', vote1.status === 200 && vote1.json?.optionIndex === 0, JSON.stringify(vote1.json));
+  const voteBad = await call('POST', `/api/polls/${poll1.json.id}/vote`, { optionIndex: 99 });
+  ok('越界选项被拒', voteBad.status === 400, JSON.stringify(voteBad.json));
+  const voteChange = await call('POST', `/api/polls/${poll1.json.id}/vote`, { optionIndex: 1 });
+  ok('截止前可改票', voteChange.status === 200 && voteChange.json?.changed === true, JSON.stringify(voteChange.json));
+
+  // stu1 已在「举报与封禁」章节被封禁，改用自定义昵称注册的账号投票
+  await signIn('奶茶三分糖', 'custom-pass-1');
+  await call('POST', `/api/polls/${poll1.json.id}/vote`, { optionIndex: 1 });
+  const pollView1 = await call('GET', `/api/polls/${poll1.json.id}`);
+  ok('票数正确聚合（改票不重复计）', pollView1.json?.poll?.totalVotes === 2
+    && pollView1.json?.poll?.options?.[1]?.votes === 2, JSON.stringify(pollView1.json?.poll?.options));
+  ok('详情返回我的投票', pollView1.json?.poll?.myVote === 1, `myVote=${pollView1.json?.poll?.myVote}`);
+
+  const hiddenView = await call('GET', `/api/polls/${pollHidden.json.id}`);
+  ok('隐藏票数截止前不可见', hiddenView.json?.poll?.hideResults === true
+    && hiddenView.json?.poll?.totalVotes === 0, JSON.stringify(hiddenView.json?.poll));
+
+  const guestPolls = await guest('GET', '/api/polls');
+  ok('游客可读投票列表', guestPolls.status === 200 && guestPolls.json?.items?.length >= 2);
+  ok('投票响应不含投票者身份', !guestPolls.text.includes('member_id') && !guestPolls.text.includes('poll_votes'));
+
+  const guestVote = await guest('POST', `/api/polls/${poll1.json.id}/vote`, { optionIndex: 0 });
+  ok('游客不能投票', guestVote.status === 401);
+
   // ---------- 限流 ----------
   step('限流');
   let limited = false;

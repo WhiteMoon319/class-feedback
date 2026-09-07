@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>投票详情 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/polls">
+<header class="site-header"></header>
+<main>
+  <div id="view"></div>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, api, refreshMe, isCommittee, escapeHtml, fmtTime, toast, $, $$ } from '/js/app.js';
+  init();
+  const me = await refreshMe();
+  const id = new URLSearchParams(location.search).get('id');
+
+  // ---------- 创建模式（班委） ----------
+  if (!id && isCommittee()) {
+    $('#view').innerHTML = `
+      <div class="card">
+        <div class="card-title">发起投票</div>
+        <form id="newForm">
+          <label for="ptitle">议题</label>
+          <input type="text" id="ptitle" required minlength="2" maxlength="60" placeholder="如：下周三是否组织班级聚餐">
+          <label for="pdesc">说明（可选）</label>
+          <textarea id="pdesc" maxlength="800" placeholder="补充背景信息，让投票更有依据"></textarea>
+          <label for="poptions">选项（每行一个，2-10 个）</label>
+          <textarea id="poptions" required placeholder="支持&#10;反对&#10;弃权"></textarea>
+          <label for="pexpires">截止时间（默认 24 小时后）</label>
+          <input type="datetime-local" id="pexpires">
+          <label style="display:flex;gap:var(--space-2);align-items:center">
+            <input type="checkbox" id="phide" style="width:auto"> 截止前隐藏票数
+          </label>
+          <div style="margin-top:var(--space-3)">
+            <button class="btn btn-primary" type="submit">发布投票</button>
+          </div>
+        </form>
+      </div>`;
+
+    const d = new Date(Date.now() + 24 * 3600_000);
+    const pad = (n) => String(n).padStart(2, '0');
+    $('#pexpires').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+
+    $('#newForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const options = $('#poptions').value.split('\n').map((s) => s.trim()).filter(Boolean);
+      try {
+        const r = await api('POST', '/api/polls', {
+          title: $('#ptitle').value.trim(),
+          description: $('#pdesc').value.trim(),
+          options,
+          expiresAt: $('#pexpires').value,
+          hideResults: $('#phide').checked,
+        });
+        toast('投票已发布');
+        location.href = `/poll?id=${r.id}`;
+      } catch (err) { toast(err.message); }
+    });
+  } else if (!id) {
+    location.href = '/polls';
+  } else {
+    // ---------- 查看/投票模式 ----------
+    let poll;
+    try {
+      const r = await api('GET', `/api/polls/${id}`);
+      poll = r.poll;
+    } catch (err) {
+      $('#view').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
+      poll = null;
+    }
+
+    if (poll) {
+      const open = poll.status === 'open';
+      const hidden = poll.hideResults && open;
+      const showCounts = !hidden;
+
+      $('#view').innerHTML = `
+        <div class="card">
+          <div class="item-head">
+            <h1 class="page-title" style="margin:0">${escapeHtml(poll.title)}</h1>
+            <span class="badge ${open ? 'badge-in_review' : 'badge-resolved'}">${poll.statusText}</span>
+          </div>
+          <div class="card-meta" style="margin:var(--space-2) 0 var(--space-3)">
+            <span>${escapeHtml(poll.duty)} 发起</span>
+            <span>${fmtTime(poll.createdAt)}</span>
+            <span id="countdownEl"></span>
+            ${hidden ? '<span>结果截止后公开</span>' : `<span>${poll.totalVotes} 人已投</span>`}
+          </div>
+          ${poll.description ? `<p style="margin:0 0 var(--space-3);white-space:pre-wrap">${escapeHtml(poll.description)}</p>` : ''}
+
+          ${open && me && poll.myVote != null
+            ? `<div class="notice notice-info">你已投票（${escapeHtml(poll.options[poll.myVote]?.text ?? '')}），截止前可改票。</div>` : ''}
+          ${open && !me ? '<div class="notice notice-warn"><a href="/login">登录</a>后可投票。</div>' : ''}
+
+          <div id="optionsBox">${poll.options.map((o, i) => `
+            <div class="reply">
+              <div style="display:flex;justify-content:space-between;gap:var(--space-2);align-items:center">
+                <span style="font-weight:${poll.myVote === i ? '700' : '400'};color:${poll.myVote === i ? 'var(--c-accent)' : 'inherit'}">
+                  ${poll.myVote === i ? '✓ ' : ''}${escapeHtml(o.text)}
+                </span>
+                ${showCounts ? `<span style="color:var(--c-text-2);font-size:13px">${o.votes} 票</span>` : ''}
+              </div>
+              ${showCounts && poll.totalVotes > 0 ? `
+                <div style="height:6px;background:var(--c-surface-2);border-radius:3px;margin-top:var(--space-2);overflow:hidden">
+                  <div style="height:100%;width:${Math.round((o.votes / poll.totalVotes) * 100)}%;background:var(--c-accent);border-radius:3px"></div>
+                </div>` : ''}
+            </div>`).join('')}</div>
+
+          ${open && me ? `
+            <form id="voteForm" style="margin-top:var(--space-3)">
+              <label for="voteSel">${poll.myVote != null ? '改投' : '选择'}</label>
+              <select id="voteSel">
+                ${poll.options.map((o, i) => `<option value="${i}" ${poll.myVote === i ? 'selected' : ''}>${escapeHtml(o.text)}</option>`).join('')}
+              </select>
+              <button class="btn btn-primary" type="submit" style="margin-top:var(--space-2)">${poll.myVote != null ? '改投' : '投票'}</button>
+            </form>` : ''}
+
+          ${isCommittee() ? `
+            <details class="menu" style="margin-top:var(--space-4)">
+              <summary>删除该投票</summary>
+              <button class="btn btn-sm btn-danger" id="delBtn" type="button" style="margin-top:var(--space-2)">确认删除</button>
+            </details>` : ''}
+        </div>`;
+
+      // 倒计时（每分钟刷新一次）
+      const tick = () => {
+        const el = $('#countdownEl');
+        if (!el) return;
+        const left = new Date(poll.expiresAt.replace(' ', 'T') + 'Z') - Date.now();
+        if (left <= 0) { el.textContent = '已截止'; return; }
+        const h = Math.floor(left / 3600_000);
+        const m = Math.floor((left % 3600_000) / 60_000);
+        const s = Math.floor((left % 60_000) / 1000);
+        el.textContent = h > 0 ? `剩余 ${h} 小时 ${m} 分 ${s} 秒` : `剩余 ${m} 分 ${s} 秒`;
+      };
+      tick();
+      setInterval(tick, 1000);
+
+      $('#voteForm')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+          await api('POST', `/api/polls/${id}/vote`, { optionIndex: Number($('#voteSel').value) });
+          toast('已记录你的投票');
+          setTimeout(() => location.reload(), 600);
+        } catch (err) { toast(err.message); }
+      });
+
+      $('#delBtn')?.addEventListener('click', async () => {
+        if (!confirm('确认删除该投票及其全部票数？')) return;
+        try { await api('POST', `/api/polls/${id}/delete`); toast('已删除'); location.href = '/polls'; }
+        catch (err) { toast(err.message); }
+      });
+    }
+  }
+</script>
+</body>
+</html>

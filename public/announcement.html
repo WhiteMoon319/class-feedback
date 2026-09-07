@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>班务详情 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/announcements">
+<header class="site-header"></header>
+<main>
+  <div id="detail"></div>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, $ } from '/js/app.js';
+  init();
+
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id || !/^\d+$/.test(id)) location.href = '/announcements';
+
+  try {
+    const r = await api('GET', `/api/announcements/${id}`);
+    const a = r.announcement;
+    $('#detail').innerHTML = `
+      <div class="card">
+        <div class="item-head">
+          <h1 class="page-title" style="margin:0">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</h1>
+          ${categoryBadge(a)}
+        </div>
+        <div class="card-meta" style="margin:var(--space-2) 0 var(--space-3)">
+          <span>${escapeHtml(a.duty)}</span>
+          <span>${fmtTime(a.createdAt)}</span>
+          ${a.amount ? `<span class="amount-${a.direction === 'expense' ? 'expense' : 'income'}">${a.direction === 'expense' ? '支出' : '收入'} ¥${escapeHtml(a.amount.replace('-', ''))}</span>` : ''}
+          ${a.updatedAt && a.updatedAt !== a.createdAt ? `<span>更新于 ${fmtTime(a.updatedAt)}</span>` : ''}
+        </div>
+        <p style="margin:0;white-space:pre-wrap">${escapeHtml(a.body)}</p>
+        ${a.attachments?.length ? `
+          <div style="margin-top:var(--space-4)">
+            <div class="card-title" style="font-size:14px;color:var(--c-text-2)">附件</div>
+            <div class="attachments">${a.attachments.map((att) =>
+              `<a href="${att.url}" target="_blank" rel="noopener"><img src="${att.url}" alt="${escapeHtml(att.filename)}" loading="lazy"></a>`).join('')}
+            </div>
+          </div>` : ''}
+      </div>`;
+  } catch (err) {
+    $('#detail').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
+  }
+</script>
+</body>
+</html>

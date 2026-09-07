@@ -48,11 +48,10 @@
   "vars": {
     "SITE_NAME": "班务平台",
     "SITE_URL": "https://class.whitemoon319.xyz",
-    "LOGIN_RATE_LIMIT_MAX": 10,
-    "LOGIN_RATE_LIMIT_WINDOW": 300,
-    "SUBMIT_RATE_LIMIT_MAX": 10,
-    "SUBMIT_RATE_LIMIT_WINDOW": 3600,
     "ATTACHMENT_MAX_BYTES": 5242880
+    // 限流阈值不在此定义：生产用代码默认值（登录 10 次/300s、提交 10 次/3600s、
+    // 注册 8 次/3600s、登录名 5 次/900s）；本地开发放宽请写 .dev.vars
+    // （LOGIN_RATE_LIMIT_MAX 等），避免与模板 vars 产生优先级冲突。
   },
 
   "observability": {

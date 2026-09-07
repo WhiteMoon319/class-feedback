@@ -111,6 +111,7 @@ export function renderHeader(active) {
     ['/', '首页'],
     ['/feedbacks', '反馈广场'],
     ['/announcements', '班务公开'],
+    ['/polls', '投票'],
   ];
   if (me) links.push(['/mine', '我的反馈']);
   if (isCommittee()) links.push(['/admin', '管理']);

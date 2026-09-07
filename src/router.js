@@ -8,6 +8,7 @@ import * as auth from './api/auth.js';
 import * as feedbacks from './api/feedbacks.js';
 import * as announcements from './api/announcements.js';
 import * as admin from './api/admin.js';
+import * as polls from './api/polls.js';
 import { json } from './lib/http.js';
 
 const ROUTES = [
@@ -37,6 +38,13 @@ const ROUTES = [
   ['POST', '/api/announcements/:id/delete', announcements.deleteAnnouncement],
   ['POST', '/api/announcements/:id/attachments', announcements.uploadAttachment],
   ['GET', '/api/attachments/:id', announcements.getAttachment],
+
+  // 投票（决议的实质）
+  ['GET', '/api/polls', polls.listPolls],
+  ['GET', '/api/polls/:id', polls.getPoll],
+  ['POST', '/api/polls', polls.createPoll],
+  ['POST', '/api/polls/:id/vote', polls.vote],
+  ['POST', '/api/polls/:id/delete', polls.deletePoll],
 
   // 管理端
   ['POST', '/api/admin/invites', admin.createInvites],

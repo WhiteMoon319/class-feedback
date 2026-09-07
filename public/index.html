@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/">
+<header class="site-header"></header>
+<main>
+  <h1 class="page-title">班务平台</h1>
+  <p class="page-sub">匿名向班委反映问题，公开查阅班务收支。</p>
+
+  <div class="card">
+    <div class="card-title">匿名反馈</div>
+    <p style="margin:0 0 var(--space-3);color:var(--c-text-2)">
+      每次提交都会使用全新的随机笔名，没有人能通过名字认出你——包括班委和站长。
+    </p>
+    <a class="btn btn-primary" href="/submit">提交反馈</a>
+    <a class="btn" href="/feedbacks" style="margin-left:var(--space-2)">反馈广场</a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">班务公开</div>
+    <p style="margin:0 0 var(--space-3);color:var(--c-text-2)">
+      公告、班费收支（附凭证照片）、决议记录，无需登录即可查看。
+    </p>
+    <a class="btn" href="/announcements">查看班务</a>
+  </div>
+
+  <div class="card" id="meCard" hidden>
+    <div class="card-title">我的身份</div>
+    <p style="margin:0;color:var(--c-text-2)">你的根假名是 <strong id="meRoot"></strong>（仅你自己可见），<a href="/mine">查看我的反馈</a>。</p>
+  </div>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, refreshMe, $ } from '/js/app.js';
+  init();
+  const me = await refreshMe();
+  if (me) {
+    $('#meCard').hidden = false;
+    $('#meRoot').textContent = me.displayName;
+  }
+</script>
+</body>
+</html>

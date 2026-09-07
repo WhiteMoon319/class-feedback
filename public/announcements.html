@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>班务公开 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/announcements">
+<header class="site-header"></header>
+<main>
+  <h1 class="page-title">班务公开</h1>
+  <p class="page-sub">公告、班费收支（附凭证）、决议记录。游客可读。</p>
+  <div class="tabs" id="catTabs" role="tablist">
+    <button data-c="" aria-selected="true">全部</button>
+    <button data-c="announcement">公告</button>
+    <button data-c="finance">班费</button>
+    <button data-c="minutes">决议</button>
+  </div>
+  <div id="list"></div>
+  <div class="load-more"><button class="btn" id="moreBtn" hidden>加载更多</button></div>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, $, $$ } from '/js/app.js';
+  init();
+
+  let cat = '';
+  let offset = 0;
+
+  function render(items) {
+    if (items.length === 0 && offset === 0) {
+      $('#list').innerHTML = '<div class="empty">这里还没有内容</div>';
+      return;
+    }
+    $('#list').insertAdjacentHTML('beforeend', items.map((a) => `
+      <div class="card">
+        <div class="item-head">
+          <span class="item-title">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</span>
+          ${categoryBadge(a)}
+        </div>
+        <div class="card-meta" style="margin:var(--space-2) 0">
+          <span>${escapeHtml(a.duty)}</span>
+          <span>${fmtTime(a.createdAt)}</span>
+          ${a.amount ? `<span class="amount-${a.direction === 'expense' ? 'expense' : 'income'}">${a.direction === 'expense' ? '支出' : '收入'} ¥${escapeHtml(a.amount.replace('-', ''))}</span>` : ''}
+        </div>
+        <p style="margin:0;white-space:pre-wrap">${escapeHtml(a.body)}</p>
+        ${a.attachments?.length ? `
+          <div class="attachments">
+            ${a.attachments.map((att) => `<a href="${att.url}" target="_blank" rel="noopener"><img src="${att.url}" alt="${escapeHtml(att.filename)}" loading="lazy"></a>`).join('')}
+          </div>` : ''}
+      </div>`).join(''));
+  }
+
+  async function load(reset = false) {
+    if (reset) { offset = 0; $('#list').innerHTML = ''; }
+    const r = await api('GET', `/api/announcements?limit=20&offset=${offset}${cat ? `&category=${cat}` : ''}`);
+    render(r.items);
+    offset += r.items.length;
+    $('#moreBtn').hidden = r.items.length < 20;
+  }
+
+  $('#catTabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-c]');
+    if (!btn) return;
+    $$('#catTabs button').forEach((b) => b.setAttribute('aria-selected', b === btn));
+    cat = btn.dataset.c;
+    load(true).catch((err) => toast(err.message));
+  });
+
+  $('#moreBtn').addEventListener('click', () => load().catch((err) => toast(err.message)));
+
+  load().catch((err) => { $('#list').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`; });
+</script>
+</body>
+</html>

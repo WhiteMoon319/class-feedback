@@ -1,0 +1,90 @@
+/* 班务平台 class-feedback 设计令牌 · 中性清爽气质
+   深色模式：跟随系统 + 手动开关（localStorage 'cf-theme'，值 auto|light|dark） */
+
+:root {
+  color-scheme: light dark;
+
+  --font-sans: "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  --font-mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+
+  --radius-s: 6px;
+  --radius-m: 10px;
+  --radius-l: 14px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --content-width: 720px;
+  --header-h: 56px;
+
+  --dur-fast: 120ms;
+  --dur-slow: 240ms;
+
+  /* 语义色（浅色） */
+  --c-bg: #f6f7f9;
+  --c-surface: #ffffff;
+  --c-surface-2: #eef0f3;
+  --c-border: #d9dde3;
+  --c-text: #1c2128;
+  --c-text-2: #5b6470;
+  --c-text-3: #8a929e;
+  --c-accent: #2f6fed;
+  --c-accent-weak: #e7efff;
+  --c-danger: #d64545;
+  --c-danger-weak: #fdeeee;
+  --c-success: #1f9d55;
+  --c-success-weak: #e8f7ef;
+  --c-warn: #b7791f;
+  --c-warn-weak: #fdf3e0;
+
+  --shadow-1: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 8%);
+  --shadow-2: 0 4px 12px rgb(16 24 40 / 10%);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --c-bg: #14171c;
+  --c-surface: #1d2128;
+  --c-surface-2: #262b34;
+  --c-border: #333a45;
+  --c-text: #e6e9ee;
+  --c-text-2: #a6aeb9;
+  --c-text-3: #6f7885;
+  --c-accent: #5b8ff5;
+  --c-accent-weak: #1f2a44;
+  --c-danger: #e06c6c;
+  --c-danger-weak: #3a2326;
+  --c-success: #4cba7c;
+  --c-success-weak: #1d3328;
+  --c-warn: #d9a04a;
+  --c-warn-weak: #38301f;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-2: 0 4px 12px rgb(0 0 0 / 45%);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+    --c-bg: #14171c;
+    --c-surface: #1d2128;
+    --c-surface-2: #262b34;
+    --c-border: #333a45;
+    --c-text: #e6e9ee;
+    --c-text-2: #a6aeb9;
+    --c-text-3: #6f7885;
+    --c-accent: #5b8ff5;
+    --c-accent-weak: #1f2a44;
+    --c-danger: #e06c6c;
+    --c-danger-weak: #3a2326;
+    --c-success: #4cba7c;
+    --c-success-weak: #1d3328;
+    --c-warn: #d9a04a;
+    --c-warn-weak: #38301f;
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-2: 0 4px 12px rgb(0 0 0 / 45%);
+  }
+}

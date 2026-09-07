@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>关于与隐私 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/about">
+<header class="site-header"></header>
+<main>
+  <h1 class="page-title">关于与隐私</h1>
+  <p class="page-sub">匿名平台的可信不靠承诺，靠架构。本页公开说明这套系统如何工作、收集什么、不收集什么。</p>
+
+  <div class="card">
+    <div class="card-title">我们不收集什么</div>
+    <ul style="margin:0;padding-left:1.4em">
+      <li>不收集学号、姓名、邮箱、手机号——数据库里<strong>不存在</strong>这些字段</li>
+      <li>不记录原始 IP 地址。IP 只参与提交频率限制，且以「SHA-256(IP + 当日盐)」的形式计数，当天结束密钥更换后旧值无法反查</li>
+      <li>不使用任何第三方统计或追踪脚本</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">匿名是怎么实现的</div>
+    <ul style="margin:0;padding-left:1.4em">
+      <li><strong>根假名</strong>：注册时随机分配（如「安静的云朵」），固定不变。它是你登录和「我的反馈」的依据，仅你本人和封禁管理场景可见，任何对外页面都不显示</li>
+      <li><strong>笔名</strong>：你每次提交反馈，系统独立随机生成一个新的展示名。同一人多条反馈显示不同笔名，无法通过名字认出是谁</li>
+      <li><strong>班委</strong>：回复默认署职务（如「生活委员」），也可选择匿名显示「班委」。班委同样不实名</li>
+      <li>换句话说：站长本人也无法把任何反馈对应到具体同学</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">审计日志</div>
+    <ul style="margin:0;padding-left:1.4em">
+      <li>所有关键操作（注册、发反馈、回复、发公告、封禁等）都会记录一条只追加的日志</li>
+      <li>日志记录的是「哪个根假名做了什么」，不含真实身份与 IP</li>
+      <li>日志带哈希链：任何对历史的篡改或删除都会破坏链条，可被校验发现</li>
+      <li>班委只能查看自己的操作记录；全量日志仅站点维护者可查</li>
+      <li>日志不是给任何人「破案找凶手」用的——它防的是运营方自己乱来</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">内容治理</div>
+    <ul style="margin:0;padding-left:1.4em">
+      <li>每条反馈和回复都可以被登录用户举报</li>
+      <li>班委可处理举报：隐藏违规内容、或封禁发布账号（按根假名封禁，与对外笔名无关）</li>
+      <li>封禁后无法再提交内容，历史内容保留或按需隐藏</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">技术</div>
+    <p style="margin:0;color:var(--c-text-2)">
+      托管于 Cloudflare Workers，数据存 D1，图片存 R2，均在同一账号下。
+      无第三方依赖、无统计脚本。源码遵循 AGPL-3.0 开放。
+    </p>
+  </div>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init } from '/js/app.js';
+  init();
+</script>
+</body>
+</html>

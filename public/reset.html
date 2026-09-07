@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>重置密码 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/login">
+<header class="site-header"></header>
+<main style="max-width:460px">
+  <h1 class="page-title">重置密码</h1>
+  <p class="page-sub">凭注册时保存的恢复码重置。重置后旧恢复码作废，会生成新的恢复码。</p>
+
+  <div class="card" id="formCard">
+    <form id="resetForm">
+      <label for="name">根假名</label>
+      <input type="text" id="name" required maxlength="40">
+      <label for="recovery">恢复码</label>
+      <input type="text" id="recovery" required maxlength="32" style="text-transform:uppercase">
+      <label for="password">新密码（8 位以上）</label>
+      <input type="password" id="password" autocomplete="new-password" required minlength="8" maxlength="64">
+      <div style="margin-top:var(--space-4)">
+        <button class="btn btn-primary" type="submit">重置</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" id="doneCard" hidden>
+    <div class="card-title">重置成功</div>
+    <p style="margin:0 0 var(--space-1);color:var(--c-text-2)">新的恢复码（请立即保存，旧恢复码已作废）：</p>
+    <div class="recovery-code" id="newRecovery"></div>
+    <div style="margin-top:var(--space-3)">
+      <a class="btn btn-primary" href="/login">去登录</a>
+    </div>
+  </div>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, api, toast, $ } from '/js/app.js';
+  init();
+
+  $('#resetForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    try {
+      const r = await api('POST', '/api/auth/reset', {
+        name: $('#name').value.trim(),
+        recoveryCode: $('#recovery').value.trim().toUpperCase(),
+        password: $('#password').value,
+      });
+      $('#newRecovery').textContent = r.recoveryCode;
+      $('#formCard').hidden = true;
+      $('#doneCard').hidden = false;
+    } catch (err) {
+      toast(err.message);
+      btn.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

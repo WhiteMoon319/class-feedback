@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>反馈广场 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/feedbacks">
+<header class="site-header"></header>
+<main>
+  <h1 class="page-title">反馈广场</h1>
+  <p class="page-sub">所有反馈均以随机笔名展示，游客可读。</p>
+  <div class="tabs" role="tablist" id="statusTabs">
+    <button data-s="" aria-selected="true">全部</button>
+    <button data-s="pending">待处理</button>
+    <button data-s="in_review">处理中</button>
+    <button data-s="resolved">已解决</button>
+  </div>
+  <div id="list"></div>
+  <div class="load-more"><button class="btn" id="moreBtn" hidden>加载更多</button></div>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, api, escapeHtml, statusBadge, fmtTime, $ } from '/js/app.js';
+  init();
+
+  let status = '';
+  let offset = 0;
+  let total = 0;
+
+  function render(items) {
+    if (items.length === 0 && offset === 0) {
+      $('#list').innerHTML = '<div class="empty">这里还没有内容</div>';
+      return;
+    }
+    $('#list').insertAdjacentHTML('beforeend', items.map((f) => `
+      <div class="card">
+        <div class="item-head">
+          <a class="item-title" href="/feedback?id=${f.id}">${escapeHtml(f.title)}</a>
+          ${statusBadge(f.status)}
+        </div>
+        <div class="card-meta" style="margin-top:var(--space-2)">
+          <span>${escapeHtml(f.alias)}</span>
+          <span>${fmtTime(f.createdAt)}</span>
+          <span>${f.replyCount} 条回复</span>
+        </div>
+      </div>`).join(''));
+  }
+
+  async function load(reset = false) {
+    if (reset) { offset = 0; $('#list').innerHTML = ''; }
+    const r = await api('GET', `/api/feedbacks?limit=20&offset=${offset}${status ? `&status=${status}` : ''}`);
+    total = r.total;
+    render(r.items);
+    offset += r.items.length;
+    $('#moreBtn').hidden = offset >= total;
+  }
+
+  $('#statusTabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-s]');
+    if (!btn) return;
+    $$('#statusTabs button').forEach((b) => b.setAttribute('aria-selected', b === btn));
+    status = btn.dataset.s;
+    load(true).catch((err) => toast(err.message));
+  });
+
+  $('#moreBtn').addEventListener('click', () => load().catch((err) => toast(err.message)));
+
+  load().catch((err) => { $('#list').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`; });
+</script>
+</body>
+</html>

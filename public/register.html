@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>注册 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/login">
+<header class="site-header"></header>
+<main style="max-width:460px">
+  <h1 class="page-title">注册</h1>
+  <p class="page-sub">需要班级群里领取的邀请码。注册后你将获得一个随机根假名。</p>
+
+  <div class="card" id="formCard">
+    <form id="regForm">
+      <label for="invite">邀请码</label>
+      <input type="text" id="invite" placeholder="XXXX-XXXX-XXXX" required maxlength="32" style="text-transform:uppercase">
+      <label for="password">设置密码（8 位以上）</label>
+      <input type="password" id="password" autocomplete="new-password" required minlength="8" maxlength="64">
+      <div style="margin-top:var(--space-4)">
+        <button class="btn btn-primary" type="submit">注册</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" id="doneCard" hidden>
+    <div class="card-title">注册成功</div>
+    <p style="margin:0 0 var(--space-1);color:var(--c-text-2)">你的根假名是：</p>
+    <p style="font-size:20px;font-weight:700;margin:0 0 var(--space-3)" id="rootName"></p>
+    <p style="margin:0 0 var(--space-1);color:var(--c-text-2)">恢复码（密码找回的唯一凭据，<strong>平台不保留副本，关闭本页后不再显示</strong>，请立即保存）：</p>
+    <div class="recovery-code" id="recoveryCode"></div>
+    <div style="margin-top:var(--space-3);display:flex;gap:var(--space-2)">
+      <button class="btn" id="copyBtn" type="button">复制恢复码</button>
+      <button class="btn btn-primary" id="doneBtn" type="button">我已保存，进入平台</button>
+    </div>
+  </div>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, api, setCachedMe, toast, afterLoginGo, $ } from '/js/app.js';
+  init();
+
+  $('#regForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    try {
+      const r = await api('POST', '/api/auth/register', {
+        inviteCode: $('#invite').value.trim().toUpperCase(),
+        password: $('#password').value,
+      });
+      setCachedMe(r.member);
+      $('#rootName').textContent = r.member.displayName;
+      $('#recoveryCode').textContent = r.recoveryCode;
+      $('#formCard').hidden = true;
+      $('#doneCard').hidden = false;
+      sessionStorage.setItem('cf_after_login', '/mine');
+    } catch (err) {
+      toast(err.message);
+      btn.disabled = false;
+    }
+  });
+
+  $('#copyBtn').addEventListener('click', async () => {
+    try { await navigator.clipboard.writeText($('#recoveryCode').textContent); toast('已复制'); }
+    catch { toast('复制失败，请手动抄写'); }
+  });
+
+  $('#doneBtn').addEventListener('click', afterLoginGo);
+</script>
+</body>
+</html>

@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>管理 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/admin">
+<header class="site-header"></header>
+<main>
+  <h1 class="page-title">管理</h1>
+  <p class="page-sub">班委日常工作台。封禁与全量审计日志仅站点维护者可见。</p>
+
+  <div class="tabs" id="tabs" role="tablist">
+    <button data-t="publish" aria-selected="true">发布班务</button>
+    <button data-t="invites">邀请码</button>
+    <button data-t="reports">举报</button>
+    <button data-t="audit" id="auditTab" hidden>审计日志</button>
+  </div>
+
+  <!-- 发布 -->
+  <section id="tab-publish">
+    <div class="card">
+      <div class="card-title">新发布</div>
+      <form id="pubForm">
+        <label for="pcat">类别</label>
+        <select id="pcat">
+          <option value="announcement">公告</option>
+          <option value="finance">班费</option>
+          <option value="minutes">决议</option>
+        </select>
+        <label for="ptitle">标题</label>
+        <input type="text" id="ptitle" required minlength="2" maxlength="80">
+        <label for="pbody">正文</label>
+        <textarea id="pbody" required maxlength="8000"></textarea>
+        <div id="financeRow" hidden>
+          <label for="pamount">金额（正数收入，负数支出，如 -128.00）</label>
+          <input type="text" id="pamount" placeholder="-128.00" maxlength="24">
+        </div>
+        <label id="pinnedRow" style="display:flex;gap:var(--space-2);align-items:center">
+          <input type="checkbox" id="ppinned" style="width:auto"> 置顶
+        </label>
+        <button class="btn btn-primary" type="submit">发布</button>
+      </form>
+    </div>
+    <div id="recentList"></div>
+  </section>
+
+  <!-- 邀请码 -->
+  <section id="tab-invites" hidden>
+    <div class="card">
+      <div class="card-title">生成邀请码</div>
+      <form id="inviteForm">
+        <label for="itype">类型</label>
+        <select id="itype">
+          <option value="student">学生（可发进班级群）</option>
+          <option value="committee">班委（仅私发，需填职务）</option>
+          <option value="owner">站点维护者（仅私发）</option>
+        </select>
+        <label for="iduty">职务（仅班委码需要）</label>
+        <input type="text" id="iduty" maxlength="20" placeholder="如：学习委员">
+        <label for="icount">数量</label>
+        <input type="number" id="icount" value="5" min="1" max="50">
+        <button class="btn btn-primary" type="submit">生成</button>
+      </form>
+      <div id="newCodes"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">现有邀请码</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:var(--space-2)">
+        <label style="display:flex;gap:var(--space-2);align-items:center;margin:0">
+          <input type="checkbox" id="onlyUnused" style="width:auto"> 只看未使用
+        </label>
+      </div>
+      <div style="overflow-x:auto"><table class="table" id="inviteTable"></table></div>
+    </div>
+  </section>
+
+  <!-- 举报 -->
+  <section id="tab-reports" hidden>
+    <div id="reportList"></div>
+  </section>
+
+  <!-- 审计日志（owner） -->
+  <section id="tab-audit" hidden>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:var(--space-2)">
+        <div class="card-title" style="margin:0">审计日志</div>
+        <button class="btn btn-sm" id="verifyBtn" type="button">校验哈希链</button>
+      </div>
+      <div id="chainResult"></div>
+      <div style="overflow-x:auto;margin-top:var(--space-2)"><table class="table" id="auditTable"></table></div>
+      <div class="load-more"><button class="btn" id="auditMore" hidden>加载更多</button></div>
+    </div>
+  </section>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, refreshMe, api, escapeHtml, fmtTime, isCommittee, toast, $, $$ } from '/js/app.js';
+  init();
+
+  const me = await refreshMe();
+  if (!me) { location.href = '/login'; }
+  else if (!isCommittee()) { document.querySelector('main').innerHTML = '<div class="empty">只有班委可以进入管理页</div>'; }
+  else {
+    const isOwner = me.role === 'owner';
+    if (isOwner) $('#auditTab').hidden = false;
+    bootstrap();
+  }
+
+  function bootstrap() {
+    // Tab 切换
+    $('#tabs').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-t]');
+      if (!btn) return;
+      $$('#tabs button').forEach((b) => b.setAttribute('aria-selected', b === btn));
+      ['publish', 'invites', 'reports', 'audit'].forEach((t) => {
+        $(`#tab-${t}`).hidden = t !== btn.dataset.t;
+      });
+      if (btn.dataset.t === 'invites') loadInvites();
+      if (btn.dataset.t === 'reports') loadReports();
+      if (btn.dataset.t === 'audit' && me.role === 'owner') loadAudit();
+    });
+
+    // 发布
+    $('#pcat').addEventListener('change', () => {
+      $('#financeRow').hidden = $('#pcat').value !== 'finance';
+    });
+    $('#pubForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const cat = $('#pcat').value;
+      const body = {
+        category: cat, title: $('#ptitle').value.trim(), body: $('#pbody').value.trim(),
+        pinned: $('#ppinned').checked,
+      };
+      if (cat === 'finance') { body.amount = $('#pamount').value.trim(); body.direction = body.amount.startsWith('-') ? 'expense' : 'income'; }
+      try {
+        await api('POST', '/api/announcements', body);
+        toast('已发布');
+        $('#ptitle').value = ''; $('#pbody').value = ''; $('#pamount').value = '';
+        loadRecent();
+      } catch (err) { toast(err.message); }
+    });
+    loadRecent();
+
+    // 邀请码
+    $('#inviteForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      try {
+        const r = await api('POST', '/api/admin/invites', {
+          type: $('#itype').value, count: Number($('#icount').value),
+          duty: $('#itype').value === 'committee' ? $('#iduty').value.trim() : undefined,
+        });
+        $('#newCodes').innerHTML = `
+          <div class="notice notice-info" style="margin-top:var(--space-3)">
+            已生成 ${r.codes.length} 个${r.expiresDays} 天内有效的邀请码：
+            <div style="margin-top:var(--space-2)">${r.codes.map((c) => `<div class="code">${escapeHtml(c)}</div>`).join('')}</div>
+          </div>`;
+        loadInvites();
+      } catch (err) { toast(err.message); }
+    });
+    $('#onlyUnused').addEventListener('change', loadInvites);
+
+    $('#verifyBtn').addEventListener('click', async () => {
+      try {
+        const r = await api('GET', '/api/admin/audit/verify');
+        $('#chainResult').innerHTML = r.chain.ok
+          ? `<div class="notice notice-info">哈希链完整，共 ${r.chain.count} 行</div>`
+          : `<div class="notice notice-danger">哈希链损坏：${escapeHtml(r.chain.reason)}（断点行 #${r.chain.brokenAtId ?? '?'}）</div>`;
+      } catch (err) { toast(err.message); }
+    });
+  }
+
+  async function loadRecent() {
+    try {
+      const r = await api('GET', '/api/announcements?limit=10');
+      $('#recentList').innerHTML = r.items.length ? r.items.map((a) => `
+        <div class="card">
+          <div class="item-head">
+            <span class="item-title">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</span>
+            <span class="card-meta">${fmtTime(a.createdAt)}</span>
+          </div>
+          <div class="card-meta" style="margin-top:var(--space-2)">
+            <button class="btn btn-sm" data-del="${a.id}" data-title="${escapeHtml(a.title)}">删除</button>
+          </div>
+        </div>`).join('') : '';
+    } catch { /* 游客接口失败不影响 */ }
+  }
+
+  document.addEventListener('click', async (e) => {
+    const del = e.target.closest('[data-del]');
+    if (del) {
+      if (!confirm(`确认删除「${del.dataset.title}」？附件图片一并删除。`)) return;
+      try { await api('POST', `/api/announcements/${del.dataset.del}/delete`); toast('已删除'); loadRecent(); }
+      catch (err) { toast(err.message); }
+    }
+    const voidBtn = e.target.closest('[data-void]');
+    if (voidBtn) {
+      try { await api('POST', `/api/admin/invites/${voidBtn.dataset.void}/void`); toast('已作废'); loadInvites(); }
+      catch (err) { toast(err.message); }
+    }
+    const hideBtn = e.target.closest('[data-hide]');
+    if (hideBtn) {
+      try {
+        await api('POST', `/api/admin/feedbacks/${hideBtn.dataset.hide}/hide`, { hidden: true });
+        toast('已隐藏该反馈');
+      } catch (err) { toast(err.message); }
+    }
+    const handleBtn = e.target.closest('[data-handle]');
+    if (handleBtn) {
+      const action = handleBtn.dataset.handle;
+      try {
+        await api('POST', `/api/admin/reports/${handleBtn.dataset.rid}/handle`, { action });
+        toast(action === 'ban' ? '已封禁并关闭举报' : action === 'hide' ? '已隐藏内容' : '已驳回');
+        loadReports();
+      } catch (err) { toast(err.message); }
+    }
+  });
+
+  async function loadInvites() {
+    try {
+      const r = await api('GET', `/api/admin/invites${$('#onlyUnused').checked ? '?unused=1' : ''}`);
+      $('#inviteTable').innerHTML = `
+        <tr><th>码</th><th>类型</th><th>状态</th><th>创建</th><th></th></tr>
+        ${r.items.map((i) => `
+          <tr>
+            <td class="code">${escapeHtml(i.code)}</td>
+            <td>${escapeHtml(i.type)}${i.duty ? `·${escapeHtml(i.duty)}` : ''}</td>
+            <td>${{ unused: '未使用', used: '已使用', void: '已作废' }[i.state]}</td>
+            <td>${fmtTime(i.createdAt)}</td>
+            <td>${i.state === 'unused' ? `<button class="btn btn-sm" data-void="${escapeHtml(i.code)}">作废</button>` : ''}</td>
+          </tr>`).join('')}`;
+    } catch (err) { toast(err.message); }
+  }
+
+  async function loadReports() {
+    try {
+      const r = await api('GET', '/api/admin/reports?handled=0');
+      $('#reportList').innerHTML = r.items.length ? r.items.map((rep) => `
+        <div class="card">
+          <div class="card-title">举报 #${rep.id} · ${rep.targetType === 'feedback' ? '反馈' : '回复'}</div>
+          <div class="card-meta" style="margin-bottom:var(--space-2)">
+            <span>${fmtTime(rep.createdAt)}</span>
+            <span>作者根假名：<strong>${escapeHtml(rep.target.rootName)}</strong></span>
+            <span>对外笔名：${escapeHtml(rep.target.alias)}</span>
+            <span>member #${rep.target.memberId}</span>
+          </div>
+          <p style="margin:0 0 var(--space-2);color:var(--c-text-2)">举报理由：${escapeHtml(rep.reason)}</p>
+          ${rep.target.title ? `<p style="margin:0 0 var(--space-1);font-weight:600">${escapeHtml(rep.target.title)}</p>` : ''}
+          <p style="margin:0 0 var(--space-3);white-space:pre-wrap">${escapeHtml(rep.target.body || '')}</p>
+          <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+            ${rep.targetType === 'feedback' ? `<button class="btn btn-sm" data-hide="${rep.targetId}">仅隐藏内容</button>` : ''}
+            <button class="btn btn-sm" data-handle="hide" data-rid="${rep.id}">隐藏并关闭</button>
+            <button class="btn btn-sm btn-danger" data-handle="ban" data-rid="${rep.id}">封禁作者</button>
+            <button class="btn btn-sm" data-handle="dismiss" data-rid="${rep.id}">驳回</button>
+          </div>
+        </div>`).join('') : '<div class="empty">没有待处理的举报</div>';
+    } catch (err) { toast(err.message); }
+  }
+
+  let auditOffset = 0;
+  async function loadAudit(reset = false) {
+    try {
+      if (reset) { auditOffset = 0; $('#auditTable').innerHTML = ''; }
+      const r = await api('GET', `/api/admin/audit?limit=50&offset=${auditOffset}`);
+      if (reset) {
+        $('#auditTable').innerHTML = `<tr><th>时间</th><th>操作者</th><th>动作</th><th>对象</th></tr>`;
+      }
+      $('#auditTable').insertAdjacentHTML('beforeend', r.items.map((l) => `
+        <tr>
+          <td style="white-space:nowrap">${fmtTime(l.ts)}</td>
+          <td>${l.actorName ? escapeHtml(l.actorName) : '系统'}<div class="card-meta">${escapeHtml(l.actorRole)}</div></td>
+          <td class="code">${escapeHtml(l.action)}</td>
+          <td class="card-meta">${l.targetType ? `${escapeHtml(l.targetType)} #${escapeHtml(l.targetId ?? '')}` : ''}</td>
+        </tr>`).join(''));
+      auditOffset += r.items.length;
+      $('#auditMore').hidden = r.items.length < 50;
+    } catch (err) { toast(err.message); }
+  }
+
+  $('#auditMore').addEventListener('click', () => loadAudit());
+</script>
+</body>
+</html>

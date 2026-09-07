@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>反馈详情 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+</head>
+<body data-nav="/feedbacks">
+<header class="site-header"></header>
+<main>
+  <div id="detail"></div>
+  <div class="card">
+    <div class="card-title">回复</div>
+    <div id="replies"></div>
+    <form id="replyForm" hidden>
+      <label for="replyBody">补充回复</label>
+      <textarea id="replyBody" required maxlength="2000" placeholder="补充说明或处理进展"></textarea>
+      <label id="anonRow" style="display:flex;gap:var(--space-2);align-items:center">
+        <input type="checkbox" id="anonChk" style="width:auto"> 匿名回复（对外显示「班委」）
+      </label>
+      <button class="btn btn-primary" type="submit">发送</button>
+    </form>
+  </div>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, api, cachedMe, isCommittee, escapeHtml, statusBadge, fmtTime, toast, $, $$ } from '/js/app.js';
+  init();
+
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id || !/^\d+$/.test(id)) { location.href = '/feedbacks'; }
+  const me = await refresh();
+  async function refresh() {
+    const me = cachedMe();
+    let fb, replies;
+    try {
+      const r = await api('GET', `/api/feedbacks/${id}`);
+      fb = r.feedback; replies = r.replies;
+    } catch (err) {
+      $('#detail').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
+      return null;
+    }
+
+    $('#detail').innerHTML = `
+      <div class="card">
+        <div class="item-head">
+          <h1 class="page-title" style="margin:0">${escapeHtml(fb.title)}</h1>
+          ${statusBadge(fb.status)}
+        </div>
+        <div class="card-meta" style="margin:var(--space-2) 0 var(--space-3)">
+          <span>${escapeHtml(fb.alias)}</span><span>${fmtTime(fb.createdAt)}</span>
+        </div>
+        <p style="margin:0;white-space:pre-wrap">${escapeHtml(fb.body)}</p>
+        <details class="menu" style="margin-top:var(--space-3)">
+          <summary>举报这条反馈</summary>
+          <div style="margin-top:var(--space-2)">
+            <input type="text" id="reportReason" maxlength="500" placeholder="说明举报理由（2-500 字）" style="margin-bottom:var(--space-2)">
+            <button class="btn btn-sm btn-danger" id="reportBtn">提交举报</button>
+          </div>
+        </details>
+      </div>`;
+
+    $('#replies').innerHTML = replies.length
+      ? replies.map((r) => `
+        <div class="reply">
+          <span class="reply-author">${escapeHtml(r.displayName)}</span>
+          ${r.isCommittee ? '<span class="badge badge-committee">班委</span>' : ''}
+          <div class="card-meta" style="margin:2px 0 var(--space-1)"><span>${fmtTime(r.createdAt)}</span></div>
+          <div style="white-space:pre-wrap">${escapeHtml(r.body)}</div>
+        </div>`).join('')
+      : '<div class="empty" style="padding:var(--space-3) 0">暂无回复</div>';
+
+    // 回复框：登录即可尝试，归属校验由后端做（学生只能回复自己的反馈）。
+    // 班委显示匿名选项，placeholder 提示默认署职务。
+    if (me) {
+      $('#replyForm').hidden = false;
+      $('#anonRow').style.display = isCommittee() ? 'flex' : 'none';
+      if (isCommittee()) $('#replyForm textarea').placeholder = '以「' + (me.duty || '班委') + '」身份回复，勾选则显示「班委」';
+      else $('#replyForm textarea').placeholder = '补充说明（将沿用本次笔名）';
+    }
+
+    $('#reportBtn')?.addEventListener('click', async () => {
+      try {
+        await api('POST', `/api/feedbacks/${id}/report`, {
+          targetType: 'feedback', targetId: Number(id), reason: $('#reportReason').value.trim(),
+        });
+        toast('已提交举报，班委会尽快处理');
+        $('#reportReason').value = '';
+      } catch (err) { toast(err.message); }
+    });
+
+    return { fb, replies };
+  }
+
+  $('#replyForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    try {
+      await api('POST', `/api/feedbacks/${id}/replies`, {
+        body: $('#replyBody').value.trim(),
+        anonymous: $('#anonChk')?.checked || false,
+      });
+      toast('已发送');
+      location.reload();
+    } catch (err) { toast(err.message); }
+  });
+</script>
+</body>
+</html>

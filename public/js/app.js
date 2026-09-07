@@ -119,10 +119,20 @@ export function renderHeader(active) {
         `<a href="${href}" ${active === href ? 'aria-current="page"' : ''}>${label}</a>`).join('')}
       </nav>
       ${me
-        ? `<a href="/mine" title="已登录" style="color:var(--c-text-2);font-size:13px;white-space:nowrap">${escapeHtml(me.displayName)}</a>`
+        ? `<a href="/mine" title="已登录" style="color:var(--c-text-2);font-size:13px;white-space:nowrap">${escapeHtml(me.displayName)}</a>
+           <button class="btn btn-sm" id="logoutBtn" type="button" title="退出登录" style="white-space:nowrap">退出</button>`
         : '<a href="/login" class="btn btn-sm" style="white-space:nowrap">登录</a>'}
       <button class="theme-btn" id="themeBtn" title="切换深浅色" aria-label="切换深浅色">◐</button>
     </div>`;
+
+  const lo = $('#logoutBtn');
+  if (lo) {
+    lo.addEventListener('click', async () => {
+      try { await api('POST', '/api/auth/logout'); } catch { /* 会话已失效也无妨 */ }
+      setCachedMe(null);
+      location.href = '/';
+    });
+  }
 
   const btn = $('#themeBtn');
   const apply = (mode) => {

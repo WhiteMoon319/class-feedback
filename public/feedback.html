@@ -10,6 +10,7 @@
 <body data-nav="/feedbacks">
 <header class="site-header"></header>
 <main>
+  <div id="backRow"></div>
   <div id="detail"></div>
   <section class="card">
     <div class="card-title">回复</div>
@@ -28,8 +29,9 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, cachedMe, isCommittee, escapeHtml, statusBadge, fmtTime, toast, skeleton, errorBox, $, $$ } from '/js/app.js';
+  import { init, api, cachedMe, isCommittee, escapeHtml, statusBadge, fmtTime, toast, skeleton, errorBox, renderBackLink, $, $$ } from '/js/app.js';
   init();
+  $('#backRow').appendChild(renderBackLink('/feedbacks', '返回反馈广场'));
 
   const id = new URLSearchParams(location.search).get('id');
   if (!id || !/^\d+$/.test(id)) { location.href = '/feedbacks'; }

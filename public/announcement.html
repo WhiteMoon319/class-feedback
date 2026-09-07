@@ -10,12 +10,14 @@
 <body data-nav="/announcements">
 <header class="site-header"></header>
 <main>
+  <div id="backRow"></div>
   <div id="detail"></div>
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, skeleton, errorBox, $ } from '/js/app.js';
+  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, skeleton, errorBox, renderBackLink, $ } from '/js/app.js';
   init();
+  $('#backRow').appendChild(renderBackLink('/announcements', '返回班务公开'));
 
   const id = new URLSearchParams(location.search).get('id');
   if (!id || !/^\d+$/.test(id)) location.href = '/announcements';

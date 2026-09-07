@@ -199,6 +199,32 @@ export function renderFooter() {
     <span style="margin-left:auto">数据仅存于本班 Cloudflare，不收集真实身份</span>`;
 }
 
+/** 页内返回链接：不依赖浏览器历史。
+ *  优先回到站内来源页（如从「我的反馈」进入则返回我的反馈），
+ *  无来源（直接输 URL）时回默认列表页。 */
+export function renderBackLink(defaultHref, defaultLabel) {
+  let href = defaultHref;
+  let label = defaultLabel;
+  try {
+    const ref = document.referrer;
+    if (ref) {
+      const u = new URL(ref);
+      if (u.origin === location.origin && u.pathname !== location.pathname) {
+        href = ref;
+        if (u.pathname.includes('/mine')) label = '返回我的反馈';
+        else if (u.pathname.includes('/feedbacks')) label = '返回反馈广场';
+        else if (u.pathname.includes('/announcements')) label = '返回班务公开';
+        else if (u.pathname.includes('/polls')) label = '返回投票';
+      }
+    }
+  } catch { /* 跨源或不合法 referrer，保持默认 */ }
+  const el = document.createElement('a');
+  el.className = 'back-link';
+  el.href = href;
+  el.textContent = `← ${label}`;
+  return el;
+}
+
 export function requireLoginPage() {
   if (!cachedMe()) {
     sessionStorage.setItem('cf_after_login', location.pathname + location.search);

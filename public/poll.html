@@ -10,12 +10,14 @@
 <body data-nav="/polls">
 <header class="site-header"></header>
 <main>
+  <div id="backRow"></div>
   <div id="view"></div>
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, refreshMe, isCommittee, escapeHtml, fmtTime, toast, skeleton, errorBox, armDangerButton, $, $$ } from '/js/app.js';
+  import { init, api, refreshMe, isCommittee, escapeHtml, fmtTime, toast, skeleton, errorBox, armDangerButton, renderBackLink, $, $$ } from '/js/app.js';
   init();
+  $('#backRow').appendChild(renderBackLink('/polls', '返回投票'));
   const me = await refreshMe();
   const id = new URLSearchParams(location.search).get('id');
 

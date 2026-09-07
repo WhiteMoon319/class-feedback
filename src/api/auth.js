@@ -129,6 +129,7 @@ export async function register(request, env) {
       warning: '请立即保存恢复码：这是唯一的密码找回凭据，平台不保留副本，关闭本页后不再显示。',
     }, 201),
     token,
+    new URL(request.url).protocol === 'https:',
   );
 }
 
@@ -143,7 +144,7 @@ export async function login(request, env) {
       max: Number(env.LOGIN_RATE_LIMIT_MAX) || 10,
       windowSec: Number(env.LOGIN_RATE_LIMIT_WINDOW) || 300,
     }),
-    consume(env.DB, `login:name:${await sha256Hex(name.toLowerCase())}`, {
+    consume(env.DB, `login:name:${await sha256Hex(`${env.SESSION_SECRET}|${name.toLowerCase()}`)}`, {
       max: Number(env.LOGIN_NAME_RATE_LIMIT_MAX) || 5,
       windowSec: Number(env.LOGIN_NAME_RATE_LIMIT_WINDOW) || 900,
     }),
@@ -175,7 +176,7 @@ export async function login(request, env) {
   });
 
   const token = await signToken(env.SESSION_SECRET, member.id, member.session_version);
-  return setSessionCookie(json({ ok: true, member: memberView(member) }), token);
+  return setSessionCookie(json({ ok: true, member: memberView(member) }), token, new URL(request.url).protocol === 'https:');
 }
 
 export async function logout(request, env) {
@@ -186,7 +187,7 @@ export async function logout(request, env) {
       targetType: 'member', targetId: member.id,
     });
   }
-  return clearSessionCookie(json({ ok: true }));
+  return clearSessionCookie(json({ ok: true }), new URL(request.url).protocol === 'https:');
 }
 
 async function loadOrNull(request, env) {
@@ -219,9 +220,10 @@ export async function resetPassword(request, env) {
   if (!limit.ok) return fail(429, 'rate_limited', `重置尝试过于频繁，请 ${limit.retryAfter} 秒后再试`);
 
   const member = await env.DB.prepare(
-    'SELECT id, recovery_hash, session_version FROM members WHERE display_name = ?',
+    'SELECT id, recovery_hash, session_version, banned FROM members WHERE display_name = ?',
   ).bind(name).first();
-  if (!member || !(await verifyPassword(recoveryCode.toUpperCase(), member.recovery_hash))) {
+  // 封禁账号不允许重置（提示与恢复码错误一致，不泄露账号状态）
+  if (!member || member.banned || !(await verifyPassword(recoveryCode.toUpperCase(), member.recovery_hash))) {
     return fail(401, 'bad_recovery', '假名或恢复码不正确');
   }
 

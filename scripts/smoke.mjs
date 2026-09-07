@@ -303,6 +303,12 @@ async function main() {
   // ---------- 密码重置 ----------
   step('恢复码重置密码');
   jar = new Map();
+  // 封禁账号不得重置（与恢复码错误同提示，不泄露账号状态）
+  const bannedReset = await call('POST', '/api/auth/reset', {
+    name: identities.stu1.root, recoveryCode: identities.stu1.recovery, password: 'x-new-pass-123',
+  });
+  ok('封禁账号重置密码被拒', bannedReset.status === 401, JSON.stringify(bannedReset.json));
+
   const badReset = await call('POST', '/api/auth/reset', { name: identities.stu2.root, recoveryCode: 'WRONG-CODE-XXXX', password: 'new-pass-1234' });
   ok('错误恢复码被拒', badReset.status === 401);
 

@@ -5,7 +5,7 @@
 // 班费记录带凭证图片（R2），图片经 Worker 代理输出，不使用公开桶直链。
 
 import { requireCommittee } from '../lib/authz.js';
-import { json, fail, readJson, strField, intParam, oneOf } from '../lib/http.js';
+import { json, fail, readJson, strField, intParam, oneOf, ApiError } from '../lib/http.js';
 import { writeAudit } from '../lib/audit.js';
 import { sha256Hex } from '../lib/crypto.js';
 
@@ -130,13 +130,33 @@ export async function updateAnnouncement(request, env, url, params) {
   const id = intParam(params.id, '公告编号');
   const body = await readJson(request);
 
-  const before = await env.DB.prepare('SELECT id, category, title FROM announcements WHERE id = ?').bind(id).first();
+  const before = await env.DB.prepare(
+    'SELECT id, category, title, body, amount, direction, pinned FROM announcements WHERE id = ?',
+  ).bind(id).first();
   if (!before) return fail(404, 'not_found', '内容不存在');
-  const category = body.category ? oneOf(body.category, CATEGORIES, '类别') : before.category;
-  const { title, text, pinned, amount, direction } = readFields(
-    { title: body.title ?? before.title, body: body.body ?? '', pinned: body.pinned, amount: body.amount, direction: body.direction },
-    category,
-  );
+
+  // 部分更新：只取请求提供的字段，未提供则保留原值
+  const category = body.category !== undefined ? oneOf(body.category, CATEGORIES, '类别') : before.category;
+  const title = body.title !== undefined ? strField(body, 'title', { min: 2, max: TITLE_MAX }) : before.title;
+  const text = body.body !== undefined ? strField(body, 'body', { min: 1, max: BODY_MAX }) : before.body;
+  const pinned = body.pinned !== undefined ? (body.pinned === true ? 1 : 0) : before.pinned;
+
+  let amount = before.amount;
+  let direction = before.direction;
+  if (category === 'finance') {
+    if (body.amount !== undefined) {
+      amount = strField(body, 'amount', { min: 1, max: 24 });
+      if (!/^-?\d+(\.\d{1,2})?$/.test(amount)) {
+        throw new ApiError(400, 'invalid_field', '金额格式不正确');
+      }
+      direction = body.direction !== undefined
+        ? oneOf(body.direction, ['income', 'expense'], '收支方向')
+        : (before.direction || (amount.startsWith('-') ? 'expense' : 'income'));
+    }
+  } else {
+    amount = null;
+    direction = null;
+  }
 
   await env.DB.prepare(
     `UPDATE announcements SET category = ?, title = ?, body = ?, amount = ?, direction = ?, pinned = ?,

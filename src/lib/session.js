@@ -36,24 +36,28 @@ export async function verifyToken(secret, token, sessionVersion = null) {
   }
 }
 
-function cookieHeaders(value, maxAge) {
+function cookieHeaders(value, maxAge, secure) {
   const parts = [
     `${COOKIE_NAME}=${value}`,
     'Path=/',
     'HttpOnly',
     'SameSite=Strict',
+    ...(secure ? ['Secure'] : []),
     `Max-Age=${maxAge}`,
   ];
   return parts.join('; ');
 }
 
-export function setSessionCookie(response, token) {
-  response.headers.append('Set-Cookie', cookieHeaders(token, TTL_SECONDS));
+/** secure 传 request.url.protocol === 'https:'：生产 HTTPS 下发 Secure cookie，
+ *  本地 http 开发环境不能加（否则 cookie 不被发送、会话全失效） */
+export function setSessionCookie(response, token, secure = false) {
+  response.headers.append('Set-Cookie', cookieHeaders(token, TTL_SECONDS, secure));
   return response;
 }
 
-export function clearSessionCookie(response) {
-  response.headers.append('Set-Cookie', cookieHeaders('', 0));
+export function clearSessionCookie(response, secure = false) {
+  // 清除时 Secure 属性必须与写入时一致，否则无法覆盖删除
+  response.headers.append('Set-Cookie', cookieHeaders('', 0, secure));
   return response;
 }
 

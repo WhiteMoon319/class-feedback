@@ -222,6 +222,14 @@ export async function reportContent(request, env, url, params) {
   const fb = await env.DB.prepare('SELECT id FROM feedbacks WHERE id = ?').bind(id).first();
   if (!fb) return fail(404, 'not_found', '该反馈不存在或已下架');
 
+  // 举报对象必须真实存在且属于该反馈，防随意构造 targetId
+  if (targetType === 'reply') {
+    const reply = await env.DB.prepare(
+      'SELECT id FROM replies WHERE id = ? AND feedback_id = ?',
+    ).bind(targetId, id).first();
+    if (!reply) return fail(400, 'invalid_field', '举报的回复不存在或不属于该反馈');
+  }
+
   const limit = await consume(env.DB, `report:${member.id}`, { max: 10, windowSec: 3600 });
   if (!limit.ok) return fail(429, 'rate_limited', `举报过于频繁，请 ${limit.retryAfter} 秒后再试`);
 

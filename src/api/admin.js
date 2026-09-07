@@ -162,9 +162,13 @@ export async function handleReport(request, env, url, params) {
 
   const stmts = [];
   if (action === 'hide') {
-    stmts.push(report.target_type === 'feedback'
-      ? env.DB.prepare('UPDATE feedbacks SET hidden = 1 WHERE id = ?').bind(report.target_id)
-      : env.DB.prepare('UPDATE replies SET hidden = 1 WHERE id = ?').bind(report.target_id));
+    if (report.target_type === 'feedback') {
+      // 隐藏反馈时连带隐藏其全部回复，否则主贴下架但评论区仍公开
+      stmts.push(env.DB.prepare('UPDATE feedbacks SET hidden = 1 WHERE id = ?').bind(report.target_id));
+      stmts.push(env.DB.prepare('UPDATE replies SET hidden = 1 WHERE feedback_id = ?').bind(report.target_id));
+    } else {
+      stmts.push(env.DB.prepare('UPDATE replies SET hidden = 1 WHERE id = ?').bind(report.target_id));
+    }
   }
   if (action === 'ban' && targetMember?.member_id) {
     stmts.push(env.DB.prepare('UPDATE members SET banned = 1, session_version = session_version + 1 WHERE id = ?')

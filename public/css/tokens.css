@@ -1,90 +1,141 @@
-/* 班务平台 class-feedback 设计令牌 · 中性清爽气质
-   深色模式：跟随系统 + 手动开关（localStorage 'cf-theme'，值 auto|light|dark） */
+/* 班务平台 class-feedback · 设计令牌 v2
+   视觉语言：Vercel 式克制层级（border 分隔、无投影）+ Linear 式状态点徽章
+   + Apple 式半透明材质导航。动效曲线/时长来自 emil-design-eng 标准。 */
 
 :root {
   color-scheme: light dark;
 
-  --font-sans: "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
-  --font-mono: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
 
+  /* —— 动效（emil 标准：强自定义曲线，UI 动画 < 300ms） —— */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);       /* 进入/退出 */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);   /* 屏上移动/变形 */
+  --dur-1: 100ms;   /* 瞬时反馈 */
+  --dur-2: 160ms;   /* 按钮按下 */
+  --dur-3: 200ms;   /* 常规进出场 */
+  --dur-4: 300ms;   /* 上限 */
+  /* 旧名兼容（页面内联样式仍引用） */
+  --dur-fast: var(--dur-2);
+  --dur-slow: var(--dur-4);
+
+  /* —— 圆角 —— */
   --radius-s: 6px;
-  --radius-m: 10px;
-  --radius-l: 14px;
+  --radius-m: 8px;
+  --radius-l: 12px;
 
+  /* —— 间距（4 基数） —— */
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
   --space-5: 24px;
   --space-6: 32px;
+  --space-7: 48px;
 
-  --content-width: 720px;
-  --header-h: 56px;
+  --content-width: 680px;
+  --header-h: 52px;
 
-  --dur-fast: 120ms;
-  --dur-slow: 240ms;
-
-  /* 语义色（浅色） */
-  --c-bg: #f6f7f9;
+  /* —— 浅色（Vercel 系） —— */
+  --c-bg: #fafafa;
   --c-surface: #ffffff;
-  --c-surface-2: #eef0f3;
-  --c-border: #d9dde3;
-  --c-text: #1c2128;
-  --c-text-2: #5b6470;
-  --c-text-3: #717a87; /* 13px 元信息小字，浅色下约 4.6:1（AA） */
-  --c-accent: #2f6fed;
-  --c-accent-weak: #e7efff;
-  --c-danger: #d64545;
-  --c-danger-weak: #fdeeee;
-  --c-success: #17824a; /* 徽章小字加深一档至 AA */
-  --c-success-weak: #e8f7ef;
-  --c-warn: #a8661a; /* 徽章小字加深一档至 AA */
-  --c-warn-weak: #fdf3e0;
+  --c-surface-2: #f4f4f5;
+  --c-surface-3: #ececee;
+  --c-border: #e4e4e7;
+  --c-border-strong: #d4d4d8;
+  --c-text: #18181b;
+  --c-text-2: #52525b;
+  --c-text-3: #71717a;
+  --c-accent: #0066ff;
+  --c-accent-weak: #eff6ff;
+  --c-danger: #dc2626;
+  --c-danger-weak: #fef2f2;
+  --c-success: #16a34a;
+  --c-success-weak: #f0fdf4;
+  --c-warn: #d97706;
+  --c-warn-weak: #fffbeb;
 
-  --shadow-1: 0 1px 2px rgb(16 24 40 / 6%), 0 1px 3px rgb(16 24 40 / 8%);
-  --shadow-2: 0 4px 12px rgb(16 24 40 / 10%);
+  /* 状态点（Linear 风格：点 + 文字，无彩底） */
+  --c-dot-pending: #d97706;
+  --c-dot-review: #0066ff;
+  --c-dot-resolved: #16a34a;
+  --c-dot-committee: #0066ff;
+  --c-dot-income: #16a34a;
+  --c-dot-expense: #dc2626;
+
+  /* 半透明材质（Apple：导航悬浮层） */
+  --c-header-bg: rgb(250 250 250 / 0.72);
+  --c-header-border: rgb(228 228 231 / 0.8);
+
+  /* 阴影：Vercel 主用 border 分隔，阴影仅浮层（toast/popover）用 */
+  --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.08), 0 1px 3px rgb(0 0 0 / 0.06);
+  /* 旧名兼容 */
+  --shadow-1: none;
+  --shadow-2: var(--shadow-pop);
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --c-bg: #14171c;
-  --c-surface: #1d2128;
-  --c-surface-2: #262b34;
-  --c-border: #333a45;
-  --c-text: #e6e9ee;
-  --c-text-2: #a6aeb9;
-  --c-text-3: #808b99; /* 暗色小字提亮，对比度 ≈ 4.5:1 */
-  --c-accent: #5b8ff5;
-  --c-accent-weak: #1f2a44;
-  --c-danger: #e06c6c;
-  --c-danger-weak: #3a2326;
-  --c-success: #4cba7c;
-  --c-success-weak: #1d3328;
-  --c-warn: #d9a04a;
-  --c-warn-weak: #38301f;
-  --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
-  --shadow-2: 0 4px 12px rgb(0 0 0 / 25%); /* 暗色靠层级分隔，阴影只做微弱离地感 */
+  --c-bg: #0a0a0a;
+  --c-surface: #101010;
+  --c-surface-2: #181818;
+  --c-surface-3: #202020;
+  --c-border: #262626;
+  --c-border-strong: #333333;
+  --c-text: #fafafa;
+  --c-text-2: #a1a1aa;
+  --c-text-3: #8b8b93;
+  --c-accent: #3b82f6;
+  --c-accent-weak: #16233f;
+  --c-danger: #f87171;
+  --c-danger-weak: #3f1717;
+  --c-success: #4ade80;
+  --c-success-weak: #12301e;
+  --c-warn: #fbbf24;
+  --c-warn-weak: #3d2c0e;
+
+  --c-dot-pending: #fbbf24;
+  --c-dot-review: #3b82f6;
+  --c-dot-resolved: #4ade80;
+  --c-dot-committee: #3b82f6;
+  --c-dot-income: #4ade80;
+  --c-dot-expense: #f87171;
+
+  --c-header-bg: rgb(10 10 10 / 0.72);
+  --c-header-border: rgb(38 38 38 / 0.8);
+
+  --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.3);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not([data-theme="dark"]) {
     color-scheme: dark;
-    --c-bg: #14171c;
-    --c-surface: #1d2128;
-    --c-surface-2: #262b34;
-    --c-border: #333a45;
-    --c-text: #e6e9ee;
-    --c-text-2: #a6aeb9;
-    --c-text-3: #808b99;
-    --c-accent: #5b8ff5;
-    --c-accent-weak: #1f2a44;
-    --c-danger: #e06c6c;
-    --c-danger-weak: #3a2326;
-    --c-success: #4cba7c;
-    --c-success-weak: #1d3328;
-    --c-warn: #d9a04a;
-    --c-warn-weak: #38301f;
-    --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
-    --shadow-2: 0 4px 12px rgb(0 0 0 / 25%);
+    --c-bg: #0a0a0a;
+    --c-surface: #101010;
+    --c-surface-2: #181818;
+    --c-surface-3: #202020;
+    --c-border: #262626;
+    --c-border-strong: #333333;
+    --c-text: #fafafa;
+    --c-text-2: #a1a1aa;
+    --c-text-3: #8b8b93;
+    --c-accent: #3b82f6;
+    --c-accent-weak: #16233f;
+    --c-danger: #f87171;
+    --c-danger-weak: #3f1717;
+    --c-success: #4ade80;
+    --c-success-weak: #12301e;
+    --c-warn: #fbbf24;
+    --c-warn-weak: #3d2c0e;
+    --c-dot-pending: #fbbf24;
+    --c-dot-review: #3b82f6;
+    --c-dot-resolved: #4ade80;
+    --c-dot-committee: #3b82f6;
+    --c-dot-income: #4ade80;
+    --c-dot-expense: #f87171;
+    --c-header-bg: rgb(10 10 10 / 0.72);
+    --c-header-border: rgb(38 38 38 / 0.8);
+    --shadow-pop: 0 4px 16px rgb(0 0 0 / 0.5), 0 1px 3px rgb(0 0 0 / 0.3);
   }
 }

@@ -154,6 +154,10 @@ textarea { min-height: 120px; resize: vertical; }
 
 /* ---------- 列表 ---------- */
 .item-head { display: flex; justify-content: space-between; gap: var(--space-3); align-items: baseline; }
+
+/* 状态流转按钮组：hidden 时必须覆盖 display:flex */
+#statusOps { display: flex; }
+#statusOps[hidden] { display: none; }
 .item-title { font-weight: 600; color: var(--c-text); }
 .item-title:hover { color: var(--c-accent); }
 .empty { text-align: center; color: var(--c-text-3); padding: var(--space-6) 0; }

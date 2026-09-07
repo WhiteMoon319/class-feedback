@@ -53,6 +53,12 @@
           <span>${escapeHtml(fb.alias)}</span><span>${fmtTime(fb.createdAt)}</span>
         </div>
         <p style="margin:0;white-space:pre-wrap">${escapeHtml(fb.body)}</p>
+        <div id="statusOps" hidden style="margin-top:var(--space-3);gap:var(--space-2);align-items:center;flex-wrap:wrap">
+          <span class="card-meta">状态：</span>
+          <button class="btn btn-sm" data-status="pending" type="button">待处理</button>
+          <button class="btn btn-sm" data-status="in_review" type="button">处理中</button>
+          <button class="btn btn-sm" data-status="resolved" type="button">已解决</button>
+        </div>
         <details class="menu" style="margin-top:var(--space-3)">
           <summary>举报这条反馈</summary>
           <div style="margin-top:var(--space-2)">
@@ -79,6 +85,23 @@
       $('#anonRow').style.display = isCommittee() ? 'flex' : 'none';
       if (isCommittee()) $('#replyForm textarea').placeholder = '以「' + (me.duty || '班委') + '」身份回复，勾选则显示「班委」';
       else $('#replyForm textarea').placeholder = '补充说明（将沿用本次笔名）';
+    }
+
+    // 状态流转：仅班委/维护者可见，点选即更新（后端会追加一条状态变更回复）
+    if (isCommittee()) {
+      $('#statusOps').hidden = false;
+      $$('#statusOps button').forEach((b) => {
+        b.classList.toggle('btn-primary', b.dataset.status === fb.status);
+        b.addEventListener('click', async () => {
+          if (b.dataset.status === fb.status) return;
+          b.disabled = true;
+          try {
+            await api('POST', `/api/feedbacks/${id}/status`, { status: b.dataset.status });
+            toast('状态已更新');
+            location.reload();
+          } catch (err) { toast(err.message); b.disabled = false; }
+        });
+      });
     }
 
     $('#reportBtn')?.addEventListener('click', async () => {

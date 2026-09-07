@@ -12,11 +12,13 @@ const DEFAULT_WINDOW = 300;
 
 /** 从请求取原始 IP —— 仅在内存中使用，绝不写入日志或数据库 */
 export function clientIp(request) {
+  // 生产流量必经 Cloudflare 边缘，CF-Connecting-IP 恒存在，取它即可。
+  // 缺失时（本地开发、直连回源、绕过 CF 的请求）不信任 X-Forwarded-For：
+  // 该头可由客户端任意伪造，作为限流键会被轻易绕过。此时退化为固定键
+  // （未知来源共享一个配额桶），宁可误伤也不放开伪造入口。
   const cf = request.headers.get('CF-Connecting-IP');
   if (cf && cf.trim()) return cf.trim();
-  const xff = request.headers.get('x-forwarded-for');
-  const first = xff?.split(',')[0]?.trim();
-  return first || 'unknown';
+  return 'unknown';
 }
 
 /** 当日盐由会话密钥 + 日期构成：跨天自动换键，旧行随之过期被 cron 清理 */

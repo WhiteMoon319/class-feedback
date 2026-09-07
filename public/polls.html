@@ -16,7 +16,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, refreshMe, isCommittee, escapeHtml, fmtTime, toast, $ } from '/js/app.js';
+  import { init, api, refreshMe, isCommittee, escapeHtml, fmtTime, toast, skeleton, errorBox, $ } from '/js/app.js';
   init();
   const me = await refreshMe();
 
@@ -29,7 +29,7 @@
   }
 
   function render(items) {
-    $('#list').innerHTML = items.length ? items.map((p) => `
+    let html = items.length ? items.map((p) => `
       <div class="card">
         <div class="item-head">
           <a class="item-title" href="/poll?id=${p.id}">${escapeHtml(p.title)}</a>
@@ -44,18 +44,25 @@
         </div>
         <p style="margin:0;color:var(--c-text-2)">${escapeHtml((p.description || '').slice(0, 100))}</p>
       </div>`).join('') : '<div class="empty">还没有投票</div>';
+    if (isCommittee()) {
+      html = '<div class="card"><a class="btn btn-primary" href="/poll?new=1">发起新投票</a></div>' + html;
+    }
+    $('#list').innerHTML = html;
   }
 
-  const r = await api('GET', '/api/polls');
-  render(r.items);
-
-  // 班委快捷入口：创建投票
-  if (isCommittee()) {
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = '<a class="btn btn-primary" href="/poll?new=1">发起新投票</a>';
-    $('#list').prepend(card);
+  $('#list').innerHTML = skeleton(3);
+  let items;
+  try {
+    const r = await api('GET', '/api/polls');
+    items = r.items;
+  } catch (err) {
+    $('#list').innerHTML = errorBox(err.message, async () => { location.reload(); });
   }
+  if (items) render(items);
+
+  // 列表页只需分钟级信息：30 秒整体重渲染（数据量小），不逐秒重排
+  const listTimer = setInterval(() => { if (items && !document.hidden) render(items); }, 30_000);
+  window.addEventListener('pagehide', () => clearInterval(listTimer));
 </script>
 </body>
 </html>

@@ -23,7 +23,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, escapeHtml, statusBadge, fmtTime, $ } from '/js/app.js';
+  import { init, api, escapeHtml, statusBadge, fmtTime, toast, skeleton, errorBox, $, $$ } from '/js/app.js';
   init();
 
   let status = '';
@@ -50,12 +50,18 @@
   }
 
   async function load(reset = false) {
-    if (reset) { offset = 0; $('#list').innerHTML = ''; }
-    const r = await api('GET', `/api/feedbacks?limit=20&offset=${offset}${status ? `&status=${status}` : ''}`);
-    total = r.total;
-    render(r.items);
-    offset += r.items.length;
-    $('#moreBtn').hidden = offset >= total;
+    if (reset) { offset = 0; $('#list').innerHTML = skeleton(4); }
+    try {
+      const r = await api('GET', `/api/feedbacks?limit=20&offset=${offset}${status ? `&status=${status}` : ''}`);
+      if (reset) $('#list').innerHTML = '';
+      total = r.total;
+      render(r.items);
+      offset += r.items.length;
+      $('#moreBtn').hidden = offset >= total;
+    } catch (err) {
+      if (offset === 0) $('#list').innerHTML = errorBox(err.message, () => load(true));
+      else toast(err.message);
+    }
   }
 
   $('#statusTabs').addEventListener('click', (e) => {
@@ -63,12 +69,13 @@
     if (!btn) return;
     $$('#statusTabs button').forEach((b) => b.setAttribute('aria-selected', b === btn));
     status = btn.dataset.s;
-    load(true).catch((err) => toast(err.message));
+    load(true);
   });
 
-  $('#moreBtn').addEventListener('click', () => load().catch((err) => toast(err.message)));
+  $('#moreBtn').addEventListener('click', () => load());
 
-  load().catch((err) => { $('#list').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`; });
+  $('#list').innerHTML = skeleton(4);
+  load();
 </script>
 </body>
 </html>

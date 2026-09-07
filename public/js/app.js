@@ -5,16 +5,55 @@ export const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
 export function toast(msg) {
   let el = $('#toast');
-  if (!el) {
+  if (el) {
+    clearTimeout(el._t);
+    clearTimeout(el._lt);
+    el.classList.remove('leaving');
+  } else {
     el = document.createElement('div');
     el.id = 'toast';
     el.className = 'toast';
     document.body.appendChild(el);
   }
   el.textContent = msg;
+  // 强制重排，确保移除 leaving 后入场过渡从头开始
+  void el.offsetWidth;
   el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 2600);
+  el._t = setTimeout(() => {
+    el.classList.add('leaving');
+    el._lt = setTimeout(() => el.classList.remove('show', 'leaving'), 160);
+  }, 2600);
+}
+
+/** 列表加载骨架（rows 行灰条），配合 prefers-reduced-motion 自动降级为静态 */
+export function skeleton(rows = 3) {
+  const lines = Array.from({ length: rows }, () => '<div class="skeleton-line"></div>').join('');
+  return `<div class="skeleton">${lines}</div>`;
+}
+
+/** 错误态：红边框 + 消息 + 重试按钮（onRetry 返回 Promise，点击后回到骨架） */
+export function errorBox(message, onRetry) {
+  return `
+    <div class="error">
+      ${escapeHtml(message || '加载失败')}
+      ${onRetry ? `<br><button class="btn btn-sm" id="retryBtn" type="button">重试</button>` : ''}
+    </div>`;
+}
+
+/** 内联二次确认：首次点击进入待确认态（变红+文案变化），5 秒未确认自动还原。
+ *  替代原生 confirm()，保持 UI 语言一致。 */
+export function armDangerButton(btn, action, confirmText = '再点一次确认') {
+  const original = btn.textContent;
+  if (btn.dataset.armed === '1') { action(); return; }
+  btn.dataset.armed = '1';
+  btn.textContent = confirmText;
+  btn.classList.add('btn-danger');
+  clearTimeout(btn._arm);
+  btn._arm = setTimeout(() => {
+    btn.dataset.armed = '0';
+    btn.textContent = original;
+    btn.classList.remove('btn-danger');
+  }, 5000);
 }
 
 export async function api(method, path, body, opts = {}) {

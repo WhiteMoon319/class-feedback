@@ -63,6 +63,7 @@
       setCachedMe(r.member);
       $('#rootName').textContent = r.member.displayName;
       $('#recoveryCode').textContent = r.recoveryCode;
+      $('#recoveryCode').classList.add('recovery-code-pop');
       $('#formCard').hidden = true;
       $('#doneCard').hidden = false;
       sessionStorage.setItem('cf_after_login', '/mine');

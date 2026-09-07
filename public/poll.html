@@ -14,7 +14,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, refreshMe, isCommittee, escapeHtml, fmtTime, toast, $, $$ } from '/js/app.js';
+  import { init, api, refreshMe, isCommittee, escapeHtml, fmtTime, toast, skeleton, errorBox, armDangerButton, $, $$ } from '/js/app.js';
   init();
   const me = await refreshMe();
   const id = new URLSearchParams(location.search).get('id');
@@ -66,11 +66,12 @@
   } else {
     // ---------- 查看/投票模式 ----------
     let poll;
+    $('#view').innerHTML = `<div class="card">${skeleton(5)}</div>`;
     try {
       const r = await api('GET', `/api/polls/${id}`);
       poll = r.poll;
     } catch (err) {
-      $('#view').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
+      $('#view').innerHTML = errorBox(err.message, () => location.reload());
       poll = null;
     }
 
@@ -150,10 +151,15 @@
         } catch (err) { toast(err.message); }
       });
 
-      $('#delBtn')?.addEventListener('click', async () => {
-        if (!confirm('确认删除该投票及其全部票数？')) return;
-        try { await api('POST', `/api/polls/${id}/delete`); toast('已删除'); location.href = '/polls'; }
-        catch (err) { toast(err.message); }
+      $('#delBtn')?.addEventListener('click', () => {
+        armDangerButton($('#delBtn'), async () => {
+          $('#delBtn').disabled = true;
+          try {
+            await api('POST', `/api/polls/${id}/delete`);
+            toast('已删除');
+            location.href = '/polls';
+          } catch (err) { toast(err.message); $('#delBtn').disabled = false; }
+        }, '再点一次确认删除');
       });
     }
   }

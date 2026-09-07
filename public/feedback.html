@@ -26,7 +26,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, cachedMe, isCommittee, escapeHtml, statusBadge, fmtTime, toast, $, $$ } from '/js/app.js';
+  import { init, api, cachedMe, isCommittee, escapeHtml, statusBadge, fmtTime, toast, skeleton, errorBox, $, $$ } from '/js/app.js';
   init();
 
   const id = new URLSearchParams(location.search).get('id');
@@ -35,11 +35,14 @@
   async function refresh() {
     const me = cachedMe();
     let fb, replies;
+    $('#detail').innerHTML = `<div class="card">${skeleton(5)}</div>`;
+    $('#replies').innerHTML = '';
     try {
       const r = await api('GET', `/api/feedbacks/${id}`);
       fb = r.feedback; replies = r.replies;
     } catch (err) {
-      $('#detail').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`;
+      $('#detail').innerHTML = errorBox(err.message, () => location.reload());
+      $('#replies').innerHTML = '';
       return null;
     }
 

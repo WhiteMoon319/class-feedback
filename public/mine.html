@@ -17,7 +17,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, refreshMe, api, escapeHtml, statusBadge, fmtTime, requireLoginPage, toast, $ } from '/js/app.js';
+  import { init, refreshMe, api, escapeHtml, statusBadge, fmtTime, requireLoginPage, toast, skeleton, errorBox, $ } from '/js/app.js';
   init();
   if (requireLoginPage()) {
     await refreshMe();
@@ -43,15 +43,22 @@
     }
 
     async function load(reset = false) {
-      if (reset) { offset = 0; $('#list').innerHTML = ''; }
-      const r = await api('GET', `/api/my/feedbacks?limit=20&offset=${offset}`);
-      render(r.items);
-      offset += r.items.length;
-      $('#moreBtn').hidden = offset >= r.items.length || r.items.length === 0;
+      if (reset) { offset = 0; $('#list').innerHTML = skeleton(3); }
+      try {
+        const r = await api('GET', `/api/my/feedbacks?limit=20&offset=${offset}`);
+        if (reset) $('#list').innerHTML = '';
+        render(r.items);
+        offset += r.items.length;
+        $('#moreBtn').hidden = offset >= r.items.length || r.items.length === 0;
+      } catch (err) {
+        if (offset === 0) $('#list').innerHTML = errorBox(err.message, () => load(true));
+        else toast(err.message);
+      }
     }
 
-    $('#moreBtn').addEventListener('click', () => load().catch((err) => toast(err.message)));
-    load().catch((err) => { $('#list').innerHTML = `<div class="empty">${escapeHtml(err.message)}</div>`; });
+    $('#moreBtn').addEventListener('click', () => load());
+    $('#list').innerHTML = skeleton(3);
+    load();
   }
 </script>
 </body>

@@ -27,7 +27,7 @@
     const r = await api('GET', `/api/announcements/${id}`);
     const a = r.announcement;
     $('#detail').innerHTML = `
-      <div class="card">
+      <div class="card card-enter">
         <div class="item-head" style="margin-bottom:var(--space-2)">
           <h1 class="page-title" style="margin:0">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</h1>
           ${categoryBadge(a)}

@@ -40,8 +40,8 @@
       $('#list').innerHTML = '<div class="empty">这里还没有内容</div>';
       return;
     }
-    $('#list').insertAdjacentHTML('beforeend', items.map((a) => `
-      <div class="card">
+    $('#list').insertAdjacentHTML('beforeend', items.map((a, i) => `
+      <div class="card card-enter" style="animation-delay:${Math.min(i * 40, 400)}ms">
         <div class="item-head">
           <a class="item-title" href="/announcement?id=${a.id}">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</a>
           ${categoryBadge(a)}

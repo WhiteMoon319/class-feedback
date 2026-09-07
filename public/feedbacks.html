@@ -44,8 +44,8 @@
       $('#list').innerHTML = '<div class="empty">这里还没有内容</div>';
       return;
     }
-    $('#list').insertAdjacentHTML('beforeend', items.map((f) => `
-      <div class="card">
+    $('#list').insertAdjacentHTML('beforeend', items.map((f, i) => `
+      <div class="card card-enter" style="animation-delay:${Math.min(i * 40, 400)}ms">
         <div class="item-head">
           <a class="item-title" href="/feedback?id=${f.id}">${escapeHtml(f.title)}</a>
           ${statusBadge(f.status)}

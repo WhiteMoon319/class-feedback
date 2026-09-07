@@ -368,6 +368,15 @@ details.menu { border-top: 1px solid var(--c-border); padding-top: var(--space-2
 details.menu summary { cursor: pointer; color: var(--c-text-3); font-size: 13px; }
 details.menu summary:hover { color: var(--c-text-2); }
 
+/* ============ 卡片入场（组渲染 stagger：40ms 间隔，上限 400ms） ============ */
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.card-enter {
+  animation: card-in 250ms var(--ease-out) both;
+}
+
 /* ============ 加载骨架 ============ */
 .skeleton { padding: var(--space-2) 0; }
 .skeleton-line {

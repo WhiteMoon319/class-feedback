@@ -6,7 +6,12 @@
 
 * { box-sizing: border-box; }
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  /* 主题背景挂在 html 上：View Transitions 的 root 快照才能完整包含背景色，
+     否则扩散期间快照透明、露出已切换的新背景导致跳闪 */
+  background: var(--c-bg);
+}
 
 body {
   margin: 0;
@@ -17,7 +22,7 @@ body {
   background: var(--c-bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
-  transition: background-color var(--dur-3) var(--ease-out), color var(--dur-3) var(--ease-out);
+  /* 主题切换期间真实 DOM 必须静止：过渡会与 VT 快照产生色差，动画结束瞬间跳闪 */
 }
 
 a { color: var(--c-accent); text-decoration: none; }

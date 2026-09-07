@@ -154,18 +154,43 @@ export function renderHeader(active) {
   ];
   if (me) links.push(['/mine', '我的反馈']);
   if (isCommittee()) links.push(['/admin', '管理']);
+  const userArea = me
+    ? `<a class="header-user" href="/mine" title="已登录">${escapeHtml(me.displayName)}</a>
+       <button class="btn btn-sm" id="logoutBtn" type="button" title="退出登录">退出</button>`
+    : '<a class="btn btn-sm" id="loginBtn" href="/login">登录</a>';
   header.innerHTML = `
     <div class="inner">
       <a class="brand" href="/">班务平台</a>
-      <nav class="nav">${links.map(([href, label]) =>
-        `<a href="${href}" ${active === href ? 'aria-current="page"' : ''}>${label}</a>`).join('')}
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="navLinks" aria-label="打开菜单">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav" id="navLinks">
+        ${links.map(([href, label]) =>
+          `<a class="nav-item" href="${href}" ${active === href ? 'aria-current="page"' : ''}>${label}</a>`).join('')}
+        <span class="nav-spacer" aria-hidden="true"></span>
+        ${userArea}
       </nav>
-      ${me
-        ? `<a href="/mine" title="已登录" style="color:var(--c-text-2);font-size:13px;white-space:nowrap">${escapeHtml(me.displayName)}</a>
-           <button class="btn btn-sm" id="logoutBtn" type="button" title="退出登录" style="white-space:nowrap">退出</button>`
-        : '<a href="/login" class="btn btn-sm" style="white-space:nowrap">登录</a>'}
       <button class="theme-btn" id="themeBtn" title="切换深浅色" aria-label="切换深浅色">◐</button>
     </div>`;
+
+  // 汉堡菜单：menu-open 加在 header 上（汉堡按钮与抽屉都是其子孙，选择器统一命中）
+  const nav = $('#navLinks');
+  const toggle = header.querySelector('.nav-toggle');
+  const closeMenu = () => {
+    header.classList.remove('menu-open');
+    toggle.setAttribute('aria-expanded', 'false');
+  };
+  toggle.addEventListener('click', () => {
+    const open = header.classList.toggle('menu-open');
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+  // 点菜单项 / Esc / 点面板外区域均关闭
+  nav.addEventListener('click', (e) => { if (e.target.closest('a, button')) closeMenu(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+  document.addEventListener('click', (e) => {
+    if (header.classList.contains('menu-open')
+      && !e.target.closest('#navLinks') && !e.target.closest('.nav-toggle')) closeMenu();
+  });
 
   const lo = $('#logoutBtn');
   if (lo) {

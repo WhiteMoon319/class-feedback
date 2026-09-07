@@ -57,9 +57,12 @@ a:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; borde
   white-space: nowrap;
 }
 .brand:hover { text-decoration: none; }
-.nav { display: flex; gap: 2px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.nav-toggle {
+  display: none;
+}
+.nav { display: flex; gap: 2px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; align-items: center; }
 .nav::-webkit-scrollbar { display: none; }
-.nav a {
+.nav .nav-item {
   padding: 5px 10px;
   border-radius: var(--radius-s);
   font-size: 13.5px;
@@ -68,9 +71,9 @@ a:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; borde
   white-space: nowrap;
   transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out);
 }
-.nav a:hover { background: var(--c-surface-2); color: var(--c-text); text-decoration: none; }
-.nav a[aria-current="page"] { color: var(--c-text); font-weight: 600; }
-.nav a[aria-current="page"]::after {
+.nav .nav-item:hover { background: var(--c-surface-2); color: var(--c-text); text-decoration: none; }
+.nav .nav-item[aria-current="page"] { color: var(--c-text); font-weight: 600; }
+.nav .nav-item[aria-current="page"]::after {
   content: '';
   display: block;
   height: 1.5px;
@@ -78,7 +81,8 @@ a:focus-visible { outline: 2px solid var(--c-accent); outline-offset: 2px; borde
   border-radius: 2px;
   background: var(--c-accent);
 }
-.header-user { font-size: 13px; color: var(--c-text-2); white-space: nowrap; }
+.nav-spacer { flex: 1; }
+.header-user { font-size: 13px; color: var(--c-text-2); white-space: nowrap; padding: 0 4px; }
 .header-user:hover { color: var(--c-text); text-decoration: none; }
 .theme-btn {
   border: 1px solid var(--c-border);
@@ -417,13 +421,88 @@ footer.site-footer {
 }
 
 /* ============ 窄屏 ============ */
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .site-header .inner { padding: 0 var(--space-3); gap: var(--space-2); }
   .brand { font-size: 14px; }
   main { padding: var(--space-4) var(--space-3) var(--space-6); }
   .card { padding: var(--space-4); }
   .page-head { flex-direction: column; align-items: flex-start; gap: var(--space-2); }
   .page-title { font-size: 21px; }
+
+  /* 汉堡菜单（参照博客 nav-toggle 模式） */
+  .nav-toggle {
+    display: grid;
+    place-content: center;
+    gap: 5px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    flex: none;
+    /* 推至右端（移动端 .nav 已绝对定位脱离文档流，flex 内只剩 brand/toggle/theme） */
+    margin-left: auto;
+    background: transparent;
+    border: 0;
+    border-radius: var(--radius-s);
+    color: var(--c-text-2);
+    cursor: pointer;
+  }
+  .nav-toggle:hover { background: var(--c-surface-2); color: var(--c-text); }
+  .nav-toggle span {
+    width: 20px;
+    height: 2px;
+    display: block;
+    border-radius: 2px;
+    background: currentColor;
+    transition: transform var(--dur-2) var(--ease-out), opacity var(--dur-2) var(--ease-out);
+  }
+  .nav-toggle:active { transform: scale(0.95); }
+  .menu-open .nav-toggle span:first-child { transform: translateY(7px) rotate(45deg); }
+  .menu-open .nav-toggle span:nth-child(2) { opacity: 0; }
+  .menu-open .nav-toggle span:last-child { transform: translateY(-7px) rotate(-45deg); }
+
+  /* 导航变下拉抽屉：与 header 一致的半透明模糊材质，200ms ease-out 滑入 */
+  .nav {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2px;
+    max-height: calc(100dvh - var(--header-h));
+    overflow-y: auto;
+    padding: var(--space-2) var(--space-3) calc(var(--space-3) + env(safe-area-inset-bottom));
+    background: var(--c-header-bg);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    backdrop-filter: blur(12px) saturate(180%);
+    border-bottom: 1px solid var(--c-header-border);
+    box-shadow: var(--shadow-pop);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-3) var(--ease-out),
+                visibility var(--dur-3);
+  }
+  .nav.menu-open,
+  .menu-open .nav {
+    visibility: visible;
+    opacity: 1;
+    transform: translateY(0);
+  }
+  .nav .nav-item {
+    padding: 11px var(--space-3);
+    font-size: 15px;
+    border-radius: var(--radius-s);
+  }
+  .nav .nav-item[aria-current="page"] { background: var(--c-accent-weak); color: var(--c-accent); }
+  .nav .nav-item[aria-current="page"]::after { display: none; }
+  .nav-spacer { display: none; }
+  .header-user { padding: 11px var(--space-3); font-size: 15px; }
+  .nav #logoutBtn, .nav #loginBtn {
+    justify-content: center;
+    margin: var(--space-1) var(--space-3) var(--space-2);
+    padding: 10px;
+  }
 }
 
 /* ============ 动效降级（emil：gentler，保留 opacity/color，去掉位移） ============ */

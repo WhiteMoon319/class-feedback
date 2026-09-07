@@ -29,7 +29,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, skeleton, errorBox, $, $$ } from '/js/app.js?v=20260908';
+  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, skeleton, errorBox, initReveal, $, $$ } from '/js/app.js?v=20260908';
   init();
 
   let cat = '';
@@ -41,7 +41,7 @@
       return;
     }
     $('#list').insertAdjacentHTML('beforeend', items.map((a, i) => `
-      <div class="card card-enter" style="animation-delay:${Math.min(i * 40, 400)}ms">
+      <div class="card card-reveal" style="transition-delay:${Math.min(i * 80, 480)}ms">
         <div class="item-head">
           <a class="item-title" href="/announcement?id=${a.id}">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</a>
           ${categoryBadge(a)}
@@ -54,6 +54,7 @@
         <p class="item-excerpt">${escapeHtml((a.body || '').slice(0, 120))}${(a.body || '').length > 120 ? '…' : ''}</p>
         ${a.attachments?.length ? `<div class="card-meta"><span>📎 ${a.attachments.length} 个附件</span></div>` : ''}
       </div>`).join(''));
+initReveal('#list');
   }
 
   async function load(reset = false) {

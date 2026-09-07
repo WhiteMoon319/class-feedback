@@ -32,7 +32,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, escapeHtml, statusBadge, fmtTime, toast, skeleton, errorBox, $, $$ } from '/js/app.js?v=20260908';
+  import { init, api, escapeHtml, statusBadge, fmtTime, toast, skeleton, errorBox, initReveal, $, $$ } from '/js/app.js?v=20260908';
   init();
 
   let status = '';
@@ -45,7 +45,7 @@
       return;
     }
     $('#list').insertAdjacentHTML('beforeend', items.map((f, i) => `
-      <div class="card card-enter" style="animation-delay:${Math.min(i * 40, 400)}ms">
+      <div class="card card-reveal" style="transition-delay:${Math.min(i * 80, 480)}ms">
         <div class="item-head">
           <a class="item-title" href="/feedback?id=${f.id}">${escapeHtml(f.title)}</a>
           ${statusBadge(f.status)}
@@ -56,6 +56,7 @@
           <span>${f.replyCount} 条回复</span>
         </div>
       </div>`).join(''));
+initReveal('#list');
   }
 
   async function load(reset = false) {

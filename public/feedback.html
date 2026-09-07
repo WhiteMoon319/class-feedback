@@ -29,7 +29,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, cachedMe, isCommittee, escapeHtml, statusBadge, fmtTime, toast, skeleton, errorBox, renderBackLink, $, $$ } from '/js/app.js?v=20260908';
+  import { init, api, cachedMe, isCommittee, escapeHtml, statusBadge, fmtTime, toast, skeleton, errorBox, renderBackLink, initReveal, $, $$ } from '/js/app.js?v=20260908';
   init();
   $('#backRow').appendChild(renderBackLink('/feedbacks', '返回反馈广场'));
 
@@ -51,7 +51,7 @@
     }
 
     $('#detail').innerHTML = `
-      <div class="card card-enter">
+      <div class="card card-reveal">
         <div class="item-head" style="margin-bottom:var(--space-2)">
           <h1 class="page-title" style="margin:0">${escapeHtml(fb.title)}</h1>
           ${statusBadge(fb.status)}
@@ -123,6 +123,9 @@
 
     return { fb, replies };
   }
+
+  // 详情渲染完成后触发卡片渐入
+  initReveal();
 
   $('#replyForm').addEventListener('submit', async (e) => {
     e.preventDefault();

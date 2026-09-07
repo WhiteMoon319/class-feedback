@@ -15,7 +15,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, skeleton, errorBox, renderBackLink, $ } from '/js/app.js?v=20260908';
+  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, skeleton, errorBox, renderBackLink, initReveal, $ } from '/js/app.js?v=20260908';
   init();
   $('#backRow').appendChild(renderBackLink('/announcements', '返回班务公开'));
 
@@ -27,7 +27,7 @@
     const r = await api('GET', `/api/announcements/${id}`);
     const a = r.announcement;
     $('#detail').innerHTML = `
-      <div class="card card-enter">
+      <div class="card card-reveal">
         <div class="item-head" style="margin-bottom:var(--space-2)">
           <h1 class="page-title" style="margin:0">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</h1>
           ${categoryBadge(a)}
@@ -47,6 +47,7 @@
             </div>
           </div>` : ''}
       </div>`;
+    initReveal();
   } catch (err) {
     $('#detail').innerHTML = errorBox(err.message, () => location.reload());
   }

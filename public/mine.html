@@ -25,7 +25,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, refreshMe, api, escapeHtml, statusBadge, fmtTime, requireLoginPage, toast, skeleton, errorBox, $ } from '/js/app.js?v=20260908';
+  import { init, refreshMe, api, escapeHtml, statusBadge, fmtTime, requireLoginPage, toast, skeleton, errorBox, initReveal, $ } from '/js/app.js?v=20260908';
   init();
   if (requireLoginPage()) {
     await refreshMe();
@@ -37,7 +37,7 @@
         return;
       }
       $('#list').insertAdjacentHTML('beforeend', items.map((f, i) => `
-        <div class="card card-enter" style="animation-delay:${Math.min(i * 40, 400)}ms">
+        <div class="card card-reveal" style="transition-delay:${Math.min(i * 80, 480)}ms">
           <div class="item-head">
             <a class="item-title" href="/feedback?id=${f.id}">${escapeHtml(f.title)}</a>
             ${statusBadge(f.status)}
@@ -48,7 +48,8 @@
           </div>
           <p class="item-excerpt">${escapeHtml(f.body.length > 80 ? f.body.slice(0, 80) + '…' : f.body)}</p>
         </div>`).join(''));
-    }
+initReveal('#list');
+  }
 
     async function load(reset = false) {
       if (reset) { offset = 0; $('#list').innerHTML = skeleton(3); }

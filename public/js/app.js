@@ -262,6 +262,36 @@ export function renderBackLink(defaultHref, defaultLabel) {
   return el;
 }
 
+/** 列表卡片滚动渐入（对齐博客 BaseLayout 的 reveal 模式）：
+ *  视口内元素立即显示（带各自的 transition-delay 错开），视口外进入时触发。 */
+export function initReveal(root) {
+  const scope = typeof root === 'string' ? document.querySelector(root) : (root || document);
+  if (!scope) return;
+  const io = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((en) => {
+        if (en.isIntersecting) {
+          en.target.classList.add('in');
+          io.unobserve(en.target);
+        }
+      });
+    },
+    // 下边界 +300px 预触发：元素进入视口前 300px 就开始过渡，
+    // 快速滚动经过时动画已完成，避免出现空白页
+    { threshold: 0.01, rootMargin: '0px 0px 300px 0px' },
+  );
+  scope.querySelectorAll('.card-reveal:not(.in)').forEach((el) => {
+    const r = el.getBoundingClientRect();
+    const vh = window.innerHeight || document.documentElement.clientHeight;
+    // 初始视口 + 下方 800px 直接显示（含上方元素）：打开页面快速下划的前两屏不会空白
+    if (r.top < vh + 800) {
+      el.classList.add('in');
+    } else {
+      io.observe(el);
+    }
+  });
+}
+
 export function requireLoginPage() {
   if (!cachedMe()) {
     sessionStorage.setItem('cf_after_login', location.pathname + location.search);

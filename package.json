@@ -8,7 +8,7 @@
   "scripts": {
     "build": "node scripts/cf-config.mjs && node scripts/build-worker.mjs",
     "cf:config": "node scripts/cf-config.mjs",
-    "cf:db:local": "node scripts/cf-config.mjs && wrangler d1 execute class-feedback-db --local --file=db/reset-local.sql && wrangler d1 migrations apply class-feedback-db --local && wrangler d1 execute class-feedback-db --local --file=db/seed.sql",
+    "cf:db:local": "node scripts/cf-config.mjs && wrangler d1 execute class-feedback-db --local --file=db/reset-local.sql && wrangler d1 migrations apply class-feedback-db --local && node scripts/dev-seed.mjs",
     "cf:dev": "npm run build && wrangler dev",
     "cf:deploy": "npm run build && wrangler deploy",
     "cf:secret": "wrangler secret put SESSION_SECRET",

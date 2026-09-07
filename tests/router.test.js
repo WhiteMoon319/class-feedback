@@ -19,8 +19,8 @@ test('路径参数被捕获并解码', () => {
   const v = matchRoute('POST', '/api/admin/invites/ABCD-EFGH-JKLM/void');
   assert.equal(v.params.code, 'ABCD-EFGH-JKLM');
 
-  const enc = matchRoute('POST', '/api/admin/invites/' + encodeURIComponent('DEV-中文-0001') + '/void');
-  assert.equal(enc.params.code, 'DEV-中文-0001');
+  const enc = matchRoute('POST', '/api/admin/invites/' + encodeURIComponent('XX-中文-0001') + '/void');
+  assert.equal(enc.params.code, 'XX-中文-0001');
 });
 
 test('未登记路径返回 null', () => {

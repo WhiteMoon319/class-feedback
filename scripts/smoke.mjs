@@ -9,6 +9,18 @@
 const BASE = process.env.SMOKE_BASE || 'http://127.0.0.1:8787';
 const COOKIE_NAME = 'cf_class_session';
 
+// 开发种子码由 cf:db:local → scripts/dev-seed.mjs 随机生成并写入 .wrangler/dev-invites.json
+import { readFileSync } from 'node:fs';
+const devInvites = JSON.parse(readFileSync(new URL('../.wrangler/dev-invites.json', import.meta.url), 'utf8'));
+const students = devInvites.filter((i) => i.type === 'student');
+const committees = devInvites.filter((i) => i.type === 'committee');
+const SEED = {
+  owner: devInvites.find((i) => i.type === 'owner')?.code,
+  stu1: students[0]?.code,
+  stu2: students[1]?.code,
+  comm: committees.find((i) => i.duty === '生活委员')?.code ?? committees[0]?.code,
+};
+
 let passed = 0;
 let failed = 0;
 let jar = new Map();
@@ -94,19 +106,19 @@ async function main() {
     return r;
   }
 
-  const owner = await register('owner', 'DEV-OWNER-00000001', 'owner-pass-123');
+  const owner = await register('owner', SEED.owner, 'owner-pass-123');
   ok('维护者注册', owner.status === 201 && identities.owner.role === 'owner', JSON.stringify(owner.json));
   ok('返回根假名与恢复码', !!identities.owner.root && !!identities.owner.recovery);
 
-  const stu1 = await register('stu1', 'DEV-STUDENT-0001', 'student-pass-1');
+  const stu1 = await register('stu1', SEED.stu1, 'student-pass-1');
   ok('学生注册', stu1.status === 201 && identities.stu1.role === 'student', JSON.stringify(stu1.json));
-  const stu2 = await register('stu2', 'DEV-STUDENT-0002', 'student-pass-2');
+  const stu2 = await register('stu2', SEED.stu2, 'student-pass-2');
   ok('第二名学生注册', stu2.status === 201);
-  const comm = await register('comm', 'DEV-COMMITTEE-0002', 'committee-pass');
+  const comm = await register('comm', SEED.comm, 'committee-pass');
   ok('班委注册带职务', comm.status === 201 && identities.comm.duty === '生活委员', JSON.stringify(comm.json));
 
   jar = new Map();
-  const reuse = await call('POST', '/api/auth/register', { inviteCode: 'DEV-STUDENT-0002', password: 'another-pass' });
+  const reuse = await call('POST', '/api/auth/register', { inviteCode: SEED.stu2, password: 'another-pass' });
   ok('邀请码不可重复使用', reuse.status === 400 && reuse.json?.code === 'bad_invite');
 
   const allRoots = Object.values(identities).map((i) => i.root).filter(Boolean);

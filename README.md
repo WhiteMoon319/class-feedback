@@ -30,12 +30,14 @@ npx wrangler secret put SESSION_SECRET
 ## 本地开发
 
 ```bash
-npm run cf:db:local           # 重置 + 迁移 + 种子邀请码
+npm run cf:db:local           # 重置 + 迁移 + 随机生成种子邀请码（打印到控制台）
 npm run cf:dev                # http://localhost:8787
 npm test
+node scripts/smoke.mjs        # 端到端冒烟（需先 cf:db:local 且 cf:dev 在跑）
 ```
 
-本地种子邀请码见 `db/seed.sql`，其中 `DEV-OWNER-00000001` 注册后即为站点维护者。
+种子邀请码每次运行随机生成、只写入本地库（写入 .wrangler/dev-invites.json 供冒烟读取），
+**仓库内不存任何固定邀请码**。其中 owner 码注册后即为站点维护者。
 
 ## 目录
 

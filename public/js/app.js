@@ -49,11 +49,13 @@ export function setCachedMe(me) {
   else localStorage.removeItem(ME_KEY);
 }
 
-/** 页面加载时确认登录态；401 不算错误，静默清缓存 */
+/** 页面加载时确认登录态；401 不算错误，静默清缓存。成功后重渲染导航，
+    避免「cookie 有效但本地缓存被清」时导航栏与实际会话不一致 */
 export async function refreshMe() {
   try {
     const r = await api('GET', '/api/auth/me', undefined, { silent: true });
     setCachedMe(r.member);
+    if (r.member) renderHeader(document.body.dataset.nav || '/');
     return r.member;
   } catch (e) {
     setCachedMe(null);

@@ -173,15 +173,27 @@ export function renderHeader(active) {
       <button class="theme-btn" id="themeBtn" title="切换深浅色" aria-label="切换深浅色">◐</button>
     </div>`;
 
-  // 汉堡菜单：menu-open 加在 header 上（汉堡按钮与抽屉都是其子孙，选择器统一命中）
+  // 遮罩必须在 body 层：嵌套在带 backdrop-filter 的 header 内会失效（backdrop-filter 不支持嵌套）
+  let scrim = $('.nav-scrim');
+  if (!scrim) {
+    scrim = document.createElement('div');
+    scrim.className = 'nav-scrim';
+    scrim.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(scrim);
+  }
+
+  // 汉堡菜单：menu-open 加在 header 上（汉堡按钮与抽屉都是其子孙，选择器统一命中）；
+  // 遮罩在 body 层，由 nav-scrim-show 类同步控制
   const nav = $('#navLinks');
   const toggle = header.querySelector('.nav-toggle');
   const closeMenu = () => {
     header.classList.remove('menu-open');
+    scrim.classList.remove('nav-scrim-show');
     toggle.setAttribute('aria-expanded', 'false');
   };
   toggle.addEventListener('click', () => {
     const open = header.classList.toggle('menu-open');
+    scrim.classList.toggle('nav-scrim-show', open);
     toggle.setAttribute('aria-expanded', String(open));
   });
   // 点菜单项 / Esc / 点面板外区域均关闭

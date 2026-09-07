@@ -132,7 +132,10 @@ main {
   border-radius: var(--radius-m);
   padding: var(--space-5);
   margin-bottom: var(--space-2);
+  transition: border-color var(--dur-2) var(--ease-out);
 }
+/* 列表导航的微妙 hover 反馈（近不可感知级，符合高频交互降级原则） */
+.card:hover { border-color: var(--c-border-strong); }
 .card:last-child { margin-bottom: 0; }
 .card-title { font-weight: 600; font-size: 15.5px; letter-spacing: -0.01em; margin: 0 0 var(--space-2); }
 .card-meta {
@@ -233,6 +236,11 @@ textarea { min-height: 120px; resize: vertical; line-height: 1.6; }
   font-size: 13.5px;
   margin: var(--space-3) 0;
   line-height: 1.6;
+  animation: fade-in var(--dur-3) var(--ease-out);
+}
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-2px); }
+  to { opacity: 1; transform: none; }
 }
 .notice-info { border-left-color: var(--c-accent); background: var(--c-accent-weak); }
 .notice-warn { border-left-color: var(--c-warn); background: var(--c-warn-weak); }
@@ -450,6 +458,18 @@ details.menu summary:hover { color: var(--c-text-2); }
 .pager button[aria-current="page"] { background: var(--c-accent); border-color: var(--c-accent); color: #fff; font-weight: 600; }
 .pager button:disabled { opacity: 0.4; cursor: not-allowed; }
 .pager-ellipsis { color: var(--c-text-3); padding: 0 2px; }
+
+/* ============ 投票进度条生长（scaleX GPU 动画，从 0 生长到目标比例） ============ */
+.bar-grow {
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: bar-grow 500ms var(--ease-out) forwards;
+  animation-delay: 250ms; /* 等卡片浮现后再生长 */
+}
+@keyframes bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 
 /* ============ 状态流转按钮组 ============ */
 #statusOps { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-3); }

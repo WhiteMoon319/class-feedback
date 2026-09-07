@@ -30,6 +30,23 @@ function checkPassword(value) {
   return value;
 }
 
+/** 自定义昵称校验；不填返回 null（由后端随机生成根假名）。
+ *  规则：2-20 字符，仅中英文/数字/_-，不能纯数字（防「123456」当昵称） */
+function normalizeDisplayName(raw) {
+  if (raw === undefined || raw === null || String(raw).trim() === '') return null;
+  const name = String(raw).trim();
+  if (name.length < 2 || name.length > 20) {
+    throw new ApiError(400, 'invalid_field', '昵称长度需在 2-20 个字符之间');
+  }
+  if (!/^[\p{L}\p{N}_-]+$/u.test(name)) {
+    throw new ApiError(400, 'invalid_field', '昵称只能包含中英文、数字、下划线或连字符');
+  }
+  if (/^\d+$/.test(name)) {
+    throw new ApiError(400, 'invalid_field', '昵称不能是纯数字');
+  }
+  return name;
+}
+
 /** 邀请码原子核销：只有 used=0 → 1 的那一次请求能拿到 type/duty */
 async function claimInvite(db, code) {
   const res = await db.batch([
@@ -49,11 +66,16 @@ async function releaseInvite(db, code) {
 export async function register(request, env) {
   const body = await readJson(request);
   const ipk = await ipKey(request, env.SESSION_SECRET);
-  const limit = await consume(env.DB, `reg:${ipk}`, { max: 8, windowSec: 3600 });
+  const limit = await consume(env.DB, `reg:${ipk}`, {
+    max: Number(env.REGISTRATION_RATE_LIMIT_MAX) || 8,
+    windowSec: Number(env.REGISTRATION_RATE_LIMIT_WINDOW) || 3600,
+  });
   if (!limit.ok) return fail(429, 'rate_limited', `注册尝试过于频繁，请 ${limit.retryAfter} 秒后再试`);
 
   const code = strField(body, 'inviteCode', { max: 32 }).toUpperCase();
   const password = checkPassword(body.password);
+  // 昵称在核销邀请码之前校验：无效输入不应烧掉一个码
+  const customName = normalizeDisplayName(body.displayName);
 
   const invite = await claimInvite(env.DB, code);
   if (!invite) return fail(400, 'bad_invite', '邀请码无效或已被使用');
@@ -61,9 +83,13 @@ export async function register(request, env) {
   const role = invite.type === 'owner' ? 'owner' : (invite.type === 'committee' ? 'committee' : 'student');
   const duty = role === 'committee' ? (invite.duty || '班委') : null;
 
-  const displayName = await generateName(
-    async (name) => !!(await env.DB.prepare('SELECT 1 AS x FROM members WHERE display_name = ?').bind(name).first()),
-  );
+  const isTaken = async (name) => !!(await env.DB.prepare('SELECT 1 AS x FROM members WHERE display_name = ?').bind(name).first());
+  // 优先用用户自定义昵称；未提供则随机生成根假名
+  const displayName = customName
+    ? ((await isTaken(customName)) ? null : customName)
+    : await generateName(isTaken);
+  if (!displayName) return fail(409, 'name_taken', '这个昵称已被使用，换一个吧');
+
   const recoveryCode = formatRecoveryCode();
 
   let member;

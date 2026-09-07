@@ -128,6 +128,19 @@ async function main() {
   ok('新班委码可注册为学习委员', stuInviteReg.status === 201 && stuInviteReg.json?.member?.role === 'committee'
     && stuInviteReg.json?.member?.duty === '学习委员', JSON.stringify(stuInviteReg.json));
 
+  // ---------- 自定义昵称 ----------
+  step('自定义昵称');
+  await signIn(identities.owner.root, identities.owner.password);
+  const nickCodes = await call('POST', '/api/admin/invites', { type: 'student', count: 3 });
+  const [codeA, codeB, codeC] = nickCodes.json.codes;
+  const custom1 = await call('POST', '/api/auth/register', { inviteCode: codeA, password: 'custom-pass-1', displayName: '奶茶三分糖' });
+  ok('自定义昵称注册成功', custom1.status === 201 && custom1.json?.member?.displayName === '奶茶三分糖',
+    JSON.stringify(custom1.json));
+  const customDup = await call('POST', '/api/auth/register', { inviteCode: codeB, password: 'custom-pass-2', displayName: '奶茶三分糖' });
+  ok('昵称重复被拒且不烧码', customDup.status === 409 && customDup.json?.code === 'name_taken', JSON.stringify(customDup.json));
+  const customBad = await call('POST', '/api/auth/register', { inviteCode: codeC, password: 'custom-pass-3', displayName: '123456' });
+  ok('纯数字昵称被拒', customBad.status === 400 && customBad.json?.code === 'invalid_field', JSON.stringify(customBad.json));
+
   // ---------- 反馈与笔名 ----------
   step('反馈工单流');
   await signIn(identities.stu1.root, identities.stu1.password);

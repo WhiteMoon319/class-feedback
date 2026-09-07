@@ -11,12 +11,20 @@
 <header class="site-header"></header>
 <main style="max-width:460px">
   <h1 class="page-title">注册</h1>
-  <p class="page-sub">需要班级群里领取的邀请码。注册后你将获得一个随机根假名。</p>
+  <p class="page-sub">需要班级群里领取的邀请码。注册后你将获得一个昵称（根假名）作为登录名——可以自己起，也可以随机生成。</p>
 
   <div class="card" id="formCard">
     <form id="regForm">
       <label for="invite">邀请码</label>
       <input type="text" id="invite" placeholder="XXXX-XXXX-XXXX" required maxlength="32" style="text-transform:uppercase">
+      <label for="nick">昵称（你的登录名；留空则随机生成）</label>
+      <div style="display:flex;gap:var(--space-2)">
+        <input type="text" id="nick" maxlength="20" placeholder="如：奶茶三分糖" autocomplete="username">
+        <button class="btn" type="button" id="randomNick" style="white-space:nowrap">随机一个</button>
+      </div>
+      <div class="notice notice-info" style="font-size:13px;margin-top:var(--space-2)">
+        昵称对全班可见，建议不要用真名或学号。支持中文、英文、数字、下划线、连字符。
+      </div>
       <label for="password">设置密码（8 位以上）</label>
       <input type="password" id="password" autocomplete="new-password" required minlength="8" maxlength="64">
       <div style="margin-top:var(--space-4)">
@@ -27,7 +35,7 @@
 
   <div class="card" id="doneCard" hidden>
     <div class="card-title">注册成功</div>
-    <p style="margin:0 0 var(--space-1);color:var(--c-text-2)">你的根假名是：</p>
+    <p style="margin:0 0 var(--space-1);color:var(--c-text-2)">你的昵称（根假名）是：</p>
     <p style="font-size:20px;font-weight:700;margin:0 0 var(--space-3)" id="rootName"></p>
     <p style="margin:0 0 var(--space-1);color:var(--c-text-2)">恢复码（密码找回的唯一凭据，<strong>平台不保留副本，关闭本页后不再显示</strong>，请立即保存）：</p>
     <div class="recovery-code" id="recoveryCode"></div>
@@ -50,6 +58,7 @@
       const r = await api('POST', '/api/auth/register', {
         inviteCode: $('#invite').value.trim().toUpperCase(),
         password: $('#password').value,
+        displayName: $('#nick').value.trim() || undefined,
       });
       setCachedMe(r.member);
       $('#rootName').textContent = r.member.displayName;
@@ -66,6 +75,15 @@
   $('#copyBtn').addEventListener('click', async () => {
     try { await navigator.clipboard.writeText($('#recoveryCode').textContent); toast('已复制'); }
     catch { toast('复制失败，请手动抄写'); }
+  });
+
+  // 「随机一个」：前端同款词库生成建议名，提交时后端仍会查重
+  const NICK_ADJ = ['安静', '明亮', '遥远', '温和', '慵懒', '好奇', '从容', '清爽', '沉默', '自由', '沉稳', '认真'];
+  const NICK_NOUN = ['橘子', '雨伞', '书签', '台灯', '盆栽', '风筝', '麦穗', '银杏', '刺猬', '云朵', '晚风', '咖啡'];
+  $('#randomNick').addEventListener('click', () => {
+    const a = NICK_ADJ[Math.floor(Math.random() * NICK_ADJ.length)];
+    const n = NICK_NOUN[Math.floor(Math.random() * NICK_NOUN.length)];
+    $('#nick').value = `${a}的${n}`;
   });
 
   $('#doneBtn').addEventListener('click', afterLoginGo);

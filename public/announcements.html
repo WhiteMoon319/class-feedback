@@ -25,23 +25,25 @@
   </div>
 
   <div id="list"></div>
-  <div class="load-more"><button class="btn" id="moreBtn" hidden>加载更多</button></div>
+  <div class="pager" id="pager"></div>
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, skeleton, errorBox, initReveal, $, $$ } from '/js/app.js?v=20260908';
+  import { init, api, escapeHtml, categoryBadge, fmtTime, toast, skeleton, errorBox, initReveal, renderPager, $, $$ } from '/js/app.js?v=20260908';
   init();
 
   let cat = '';
-  let offset = 0;
+  let page = 1;
+  let total = 0;
+  const PAGE_SIZE = 20;
 
   function render(items) {
-    if (items.length === 0 && offset === 0) {
+    if (items.length === 0) {
       $('#list').innerHTML = '<div class="empty">这里还没有内容</div>';
       return;
     }
-    $('#list').insertAdjacentHTML('beforeend', items.map((a, i) => `
-      <div class="card card-reveal" style="transition-delay:${Math.min(i * 80, 480)}ms">
+    $('#list').innerHTML = items.map((a, i) => `
+      <div class="card card-reveal" style="animation-delay:${Math.min(i * 80, 480)}ms">
         <div class="item-head">
           <a class="item-title" href="/announcement?id=${a.id}">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</a>
           ${categoryBadge(a)}
@@ -53,21 +55,24 @@
         </div>
         <p class="item-excerpt">${escapeHtml((a.body || '').slice(0, 120))}${(a.body || '').length > 120 ? '…' : ''}</p>
         ${a.attachments?.length ? `<div class="card-meta"><span>📎 ${a.attachments.length} 个附件</span></div>` : ''}
-      </div>`).join(''));
-initReveal('#list');
+      </div>`).join('');
+    initReveal('#list');
   }
 
-  async function load(reset = false) {
-    if (reset) { offset = 0; $('#list').innerHTML = skeleton(4); }
+  async function load(target = page) {
+    page = target;
+    $('#list').innerHTML = skeleton(4);
     try {
-      const r = await api('GET', `/api/announcements?limit=20&offset=${offset}${cat ? `&category=${cat}` : ''}`);
-      if (reset) $('#list').innerHTML = '';
+      const r = await api('GET', `/api/announcements?limit=${PAGE_SIZE}&offset=${(page - 1) * PAGE_SIZE}${cat ? `&category=${cat}` : ''}`);
+      total = r.total;
       render(r.items);
-      offset += r.items.length;
-      $('#moreBtn').hidden = r.items.length < 20;
+      renderPager($('#pager'), {
+        page,
+        totalPages: Math.ceil(total / PAGE_SIZE),
+        onPage: (p) => { window.scrollTo({ top: 0 }); load(p); },
+      });
     } catch (err) {
-      if (offset === 0) $('#list').innerHTML = errorBox(err.message, () => load(true));
-      else toast(err.message);
+      $('#list').innerHTML = errorBox(err.message, () => load(page));
     }
   }
 
@@ -76,10 +81,8 @@ initReveal('#list');
     if (!btn) return;
     $$('#catTabs button').forEach((b) => b.setAttribute('aria-selected', b === btn));
     cat = btn.dataset.c;
-    load(true);
+    load(1);
   });
-
-  $('#moreBtn').addEventListener('click', () => load());
 
   $('#list').innerHTML = skeleton(4);
   load();

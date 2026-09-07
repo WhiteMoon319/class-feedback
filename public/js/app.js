@@ -292,6 +292,33 @@ export function initReveal(root) {
   });
 }
 
+/** 传统页码分页（上一页/页码/下一页，页码窗口化）。totalPages<=1 时渲染为空 */
+export function renderPager(container, { page, totalPages, onPage }) {
+  if (!container) return;
+  if (!totalPages || totalPages <= 1) { container.innerHTML = ''; return; }
+  const pages = [];
+  if (totalPages <= 7) {
+    for (let i = 1; i <= totalPages; i++) pages.push(i);
+  } else {
+    pages.push(1);
+    if (page > 3) pages.push('…');
+    for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
+    if (page < totalPages - 2) pages.push('…');
+    pages.push(totalPages);
+  }
+  const btn = (p, label, opts = {}) =>
+    `<button type="button" ${p < 1 || p > totalPages ? 'disabled' : ''} ${opts.current ? 'aria-current="page"' : ''} data-p="${p}">${label}</button>`;
+  container.innerHTML = `
+    ${btn(page - 1, '上一页')}
+    ${pages.map((p) => (p === '…' ? '<span class="pager-ellipsis">…</span>' : btn(p, p, { current: p === page }))).join('')}
+    ${btn(page + 1, '下一页')}`;
+  container.querySelectorAll('button[data-p]').forEach((b) => {
+    b.addEventListener('click', () => {
+      if (!b.disabled) onPage(Number(b.dataset.p));
+    });
+  });
+}
+
 export function requireLoginPage() {
   if (!cachedMe()) {
     sessionStorage.setItem('cf_after_login', location.pathname + location.search);

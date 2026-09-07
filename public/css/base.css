@@ -368,15 +368,23 @@ details.menu { border-top: 1px solid var(--c-border); padding-top: var(--space-2
 details.menu summary { cursor: pointer; color: var(--c-text-3); font-size: 13px; }
 details.menu summary:hover { color: var(--c-text-2); }
 
-/* ============ 卡片滚动渐入（对齐博客 reveal 参数：700ms、24px、80ms stagger、IO 触发） ============ */
+/* ============ 卡片滚动渐入（对齐博客：700ms、24px、80ms stagger） ============
+   animation + paused/running 方案：
+   - 首屏元素插入即 running → 动画从 0 完整播放（含 stagger 延迟），入场必现
+   - 视口深处元素 paused 挂起（保持隐藏），滚动接近时 IO 触发 running → 完整播放
+   - 避免 transition 被「插入后立即加类」合并成无动画，也避免预触发吞掉入场 */
 .card-reveal {
   opacity: 0;
   transform: translateY(24px);
-  transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+  animation: card-in 700ms var(--ease-out) both;
+  animation-play-state: paused;
 }
 .card-reveal.in {
-  opacity: 1;
-  transform: none;
+  animation-play-state: running;
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ============ 加载骨架 ============ */
@@ -413,6 +421,35 @@ details.menu summary:hover { color: var(--c-text-2); }
   transition: color var(--dur-2) var(--ease-out);
 }
 .back-link:hover { color: var(--c-accent); text-decoration: none; }
+
+/* ============ 传统页码分页 ============ */
+.pager {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: var(--space-5) 0 var(--space-2);
+}
+.pager button {
+  min-width: 34px;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  border-radius: var(--radius-s);
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--c-text-2);
+  cursor: pointer;
+  transition: color var(--dur-2) var(--ease-out), background-color var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+.pager button:hover:not(:disabled) { color: var(--c-text); border-color: var(--c-border-strong); background: var(--c-surface-2); }
+.pager button:active:not(:disabled) { transform: scale(0.96); }
+.pager button[aria-current="page"] { background: var(--c-accent); border-color: var(--c-accent); color: #fff; font-weight: 600; }
+.pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+.pager-ellipsis { color: var(--c-text-3); padding: 0 2px; }
 
 /* ============ 状态流转按钮组 ============ */
 #statusOps { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-3); }

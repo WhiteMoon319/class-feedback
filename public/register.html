@@ -10,19 +10,23 @@
 <body data-nav="/login">
 <header class="site-header"></header>
 <main style="max-width:460px">
-  <h1 class="page-title">注册</h1>
-  <p class="page-sub">需要班级群里领取的邀请码。注册后你将获得一个昵称（根假名）作为登录名——可以自己起，也可以随机生成。</p>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">注册</h1>
+      <p class="page-sub">需要班级群里领取的邀请码。注册后你将获得一个昵称作为登录名——可以自己起，也可以随机生成。</p>
+    </div>
+  </div>
 
-  <div class="card" id="formCard">
+  <section class="card" id="formCard">
     <form id="regForm">
       <label for="invite">邀请码</label>
       <input type="text" id="invite" placeholder="XXXX-XXXX-XXXX" required maxlength="32" style="text-transform:uppercase">
-      <label for="nick">昵称（你的登录名；留空则随机生成）</label>
+      <label for="nick">昵称（登录名；留空则随机生成）</label>
       <div style="display:flex;gap:var(--space-2)">
         <input type="text" id="nick" maxlength="20" placeholder="如：奶茶三分糖" autocomplete="username">
         <button class="btn" type="button" id="randomNick" style="white-space:nowrap">随机一个</button>
       </div>
-      <div class="notice notice-info" style="font-size:13px;margin-top:var(--space-2)">
+      <div class="notice notice-info">
         昵称对全班可见，建议不要用真名或学号。支持中文、英文、数字、下划线、连字符。
       </div>
       <label for="password">设置密码（8 位以上）</label>
@@ -31,19 +35,19 @@
         <button class="btn btn-primary" type="submit">注册</button>
       </div>
     </form>
-  </div>
+  </section>
 
-  <div class="card" id="doneCard" hidden>
+  <section class="card" id="doneCard" hidden>
     <div class="card-title">注册成功</div>
-    <p style="margin:0 0 var(--space-1);color:var(--c-text-2)">你的昵称（根假名）是：</p>
-    <p style="font-size:20px;font-weight:700;margin:0 0 var(--space-3)" id="rootName"></p>
-    <p style="margin:0 0 var(--space-1);color:var(--c-text-2)">恢复码（密码找回的唯一凭据，<strong>平台不保留副本，关闭本页后不再显示</strong>，请立即保存）：</p>
-    <div class="recovery-code" id="recoveryCode"></div>
-    <div style="margin-top:var(--space-3);display:flex;gap:var(--space-2)">
+    <p class="item-excerpt">你的昵称是：</p>
+    <p style="font-size:20px;font-weight:700;margin:0 0 var(--space-4)" id="rootName"></p>
+    <p class="item-excerpt">恢复码是密码找回的唯一凭据，<strong>平台不保留副本，关闭本页后不再显示</strong>，请立即保存：</p>
+    <div class="recovery-code recovery-code-pop" id="recoveryCode"></div>
+    <div style="margin-top:var(--space-4);display:flex;gap:var(--space-2)">
       <button class="btn" id="copyBtn" type="button">复制恢复码</button>
       <button class="btn btn-primary" id="doneBtn" type="button">我已保存，进入平台</button>
     </div>
-  </div>
+  </section>
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
@@ -63,7 +67,6 @@
       setCachedMe(r.member);
       $('#rootName').textContent = r.member.displayName;
       $('#recoveryCode').textContent = r.recoveryCode;
-      $('#recoveryCode').classList.add('recovery-code-pop');
       $('#formCard').hidden = true;
       $('#doneCard').hidden = false;
       sessionStorage.setItem('cf_after_login', '/mine');

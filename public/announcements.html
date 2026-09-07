@@ -10,14 +10,20 @@
 <body data-nav="/announcements">
 <header class="site-header"></header>
 <main>
-  <h1 class="page-title">班务公开</h1>
-  <p class="page-sub">公告、班费收支（附凭证）、决议记录。游客可读。</p>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">班务公开</h1>
+      <p class="page-sub">公告、班费收支（附凭证）、决议记录。游客可读。</p>
+    </div>
+  </div>
+
   <div class="tabs" id="catTabs" role="tablist">
     <button data-c="" aria-selected="true">全部</button>
     <button data-c="announcement">公告</button>
     <button data-c="finance">班费</button>
     <button data-c="minutes">决议</button>
   </div>
+
   <div id="list"></div>
   <div class="load-more"><button class="btn" id="moreBtn" hidden>加载更多</button></div>
 </main>
@@ -40,14 +46,13 @@
           <a class="item-title" href="/announcement?id=${a.id}">${a.pinned ? '📌 ' : ''}${escapeHtml(a.title)}</a>
           ${categoryBadge(a)}
         </div>
-        <div class="card-meta" style="margin:var(--space-2) 0">
+        <div class="card-meta">
           <span>${escapeHtml(a.duty)}</span>
           <span>${fmtTime(a.createdAt)}</span>
           ${a.amount ? `<span class="amount-${a.direction === 'expense' ? 'expense' : 'income'}">${a.direction === 'expense' ? '支出' : '收入'} ¥${escapeHtml(a.amount.replace('-', ''))}</span>` : ''}
         </div>
-        <p style="margin:0;color:var(--c-text-2);white-space:pre-wrap">${escapeHtml((a.body || '').slice(0, 120))}${(a.body || '').length > 120 ? '…' : ''}</p>
-        ${a.attachments?.length ? `
-          <div class="card-meta" style="margin-top:var(--space-2)"><span>📎 ${a.attachments.length} 个附件</span></div>` : ''}
+        <p class="item-excerpt">${escapeHtml((a.body || '').slice(0, 120))}${(a.body || '').length > 120 ? '…' : ''}</p>
+        ${a.attachments?.length ? `<div class="card-meta"><span>📎 ${a.attachments.length} 个附件</span></div>` : ''}
       </div>`).join(''));
   }
 

@@ -22,7 +22,7 @@
   // ---------- 创建模式（班委） ----------
   if (!id && isCommittee()) {
     $('#view').innerHTML = `
-      <div class="card">
+      <section class="card">
         <div class="card-title">发起投票</div>
         <form id="newForm">
           <label for="ptitle">议题</label>
@@ -36,11 +36,11 @@
           <label style="display:flex;gap:var(--space-2);align-items:center">
             <input type="checkbox" id="phide" style="width:auto"> 截止前隐藏票数
           </label>
-          <div style="margin-top:var(--space-3)">
+          <div style="margin-top:var(--space-4)">
             <button class="btn btn-primary" type="submit">发布投票</button>
           </div>
         </form>
-      </div>`;
+      </section>`;
 
     const d = new Date(Date.now() + 24 * 3600_000);
     const pad = (n) => String(n).padStart(2, '0');
@@ -81,18 +81,18 @@
       const showCounts = !hidden;
 
       $('#view').innerHTML = `
-        <div class="card">
-          <div class="item-head">
+        <section class="card">
+          <div class="item-head" style="margin-bottom:var(--space-2)">
             <h1 class="page-title" style="margin:0">${escapeHtml(poll.title)}</h1>
             <span class="badge ${open ? 'badge-in_review' : 'badge-resolved'}">${poll.statusText}</span>
           </div>
-          <div class="card-meta" style="margin:var(--space-2) 0 var(--space-3)">
+          <div class="card-meta" style="margin-bottom:var(--space-4)">
             <span>${escapeHtml(poll.duty)} 发起</span>
             <span>${fmtTime(poll.createdAt)}</span>
             <span id="countdownEl"></span>
             ${hidden ? '<span>结果截止后公开</span>' : `<span>${poll.totalVotes} 人已投</span>`}
           </div>
-          ${poll.description ? `<p style="margin:0 0 var(--space-3);white-space:pre-wrap">${escapeHtml(poll.description)}</p>` : ''}
+          ${poll.description ? `<p class="item-excerpt" style="margin-bottom:var(--space-4)">${escapeHtml(poll.description)}</p>` : ''}
 
           ${open && me && poll.myVote != null
             ? `<div class="notice notice-info">你已投票（${escapeHtml(poll.options[poll.myVote]?.text ?? '')}），截止前可改票。</div>` : ''}
@@ -101,34 +101,36 @@
           <div id="optionsBox">${poll.options.map((o, i) => `
             <div class="reply">
               <div style="display:flex;justify-content:space-between;gap:var(--space-2);align-items:center">
-                <span style="font-weight:${poll.myVote === i ? '700' : '400'};color:${poll.myVote === i ? 'var(--c-accent)' : 'inherit'}">
+                <span style="font-weight:${poll.myVote === i ? '600' : '400'};color:${poll.myVote === i ? 'var(--c-accent)' : 'inherit'}">
                   ${poll.myVote === i ? '✓ ' : ''}${escapeHtml(o.text)}
                 </span>
-                ${showCounts ? `<span style="color:var(--c-text-2);font-size:13px">${o.votes} 票</span>` : ''}
+                ${showCounts ? `<span class="card-meta">${o.votes} 票</span>` : ''}
               </div>
               ${showCounts && poll.totalVotes > 0 ? `
-                <div style="height:6px;background:var(--c-surface-2);border-radius:3px;margin-top:var(--space-2);overflow:hidden">
+                <div style="height:5px;background:var(--c-surface-2);border-radius:3px;margin-top:var(--space-2);overflow:hidden">
                   <div style="height:100%;width:${Math.round((o.votes / poll.totalVotes) * 100)}%;background:var(--c-accent);border-radius:3px"></div>
                 </div>` : ''}
             </div>`).join('')}</div>
 
           ${open && me ? `
-            <form id="voteForm" style="margin-top:var(--space-3)">
+            <form id="voteForm" style="margin-top:var(--space-4)">
               <label for="voteSel">${poll.myVote != null ? '改投' : '选择'}</label>
               <select id="voteSel">
                 ${poll.options.map((o, i) => `<option value="${i}" ${poll.myVote === i ? 'selected' : ''}>${escapeHtml(o.text)}</option>`).join('')}
               </select>
-              <button class="btn btn-primary" type="submit" style="margin-top:var(--space-2)">${poll.myVote != null ? '改投' : '投票'}</button>
+              <div style="margin-top:var(--space-2)">
+                <button class="btn btn-primary" type="submit">${poll.myVote != null ? '改投' : '投票'}</button>
+              </div>
             </form>` : ''}
 
           ${isCommittee() ? `
-            <details class="menu" style="margin-top:var(--space-4)">
+            <details class="menu">
               <summary>删除该投票</summary>
               <button class="btn btn-sm btn-danger" id="delBtn" type="button" style="margin-top:var(--space-2)">确认删除</button>
             </details>` : ''}
-        </div>`;
+        </section>`;
 
-      // 倒计时（每分钟刷新一次）
+      // 倒计时（详情页保留秒级）
       const tick = () => {
         const el = $('#countdownEl');
         if (!el) return;

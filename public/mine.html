@@ -10,8 +10,16 @@
 <body data-nav="/mine">
 <header class="site-header"></header>
 <main>
-  <h1 class="page-title">我的反馈</h1>
-  <p class="page-sub">按你的账号聚合，仅登录后自己可见。每条反馈的对外笔名各不相同。</p>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">我的反馈</h1>
+      <p class="page-sub">按你的账号聚合，仅登录后自己可见。每条反馈的对外笔名各不相同。</p>
+    </div>
+    <div class="page-head-actions">
+      <a class="btn btn-primary" href="/submit">提交反馈</a>
+    </div>
+  </div>
+
   <div id="list"></div>
   <div class="load-more"><button class="btn" id="moreBtn" hidden>加载更多</button></div>
 </main>
@@ -34,11 +42,11 @@
             <a class="item-title" href="/feedback?id=${f.id}">${escapeHtml(f.title)}</a>
             ${statusBadge(f.status)}
           </div>
-          <div class="card-meta" style="margin:var(--space-2) 0">
+          <div class="card-meta">
             <span>对外笔名：${escapeHtml(f.alias)}</span>
             <span>${fmtTime(f.createdAt)}</span>
           </div>
-          <p style="margin:0;color:var(--c-text-2);white-space:pre-wrap">${escapeHtml(f.body.length > 80 ? f.body.slice(0, 80) + '…' : f.body)}</p>
+          <p class="item-excerpt">${escapeHtml(f.body.length > 80 ? f.body.slice(0, 80) + '…' : f.body)}</p>
         </div>`).join(''));
     }
 

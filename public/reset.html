@@ -10,10 +10,14 @@
 <body data-nav="/login">
 <header class="site-header"></header>
 <main style="max-width:460px">
-  <h1 class="page-title">重置密码</h1>
-  <p class="page-sub">凭注册时保存的恢复码重置。重置后旧恢复码作废，会生成新的恢复码。</p>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">重置密码</h1>
+      <p class="page-sub">凭注册时保存的恢复码重置。重置后旧恢复码作废，会生成新的恢复码。</p>
+    </div>
+  </div>
 
-  <div class="card" id="formCard">
+  <section class="card" id="formCard">
     <form id="resetForm">
       <label for="name">昵称</label>
       <input type="text" id="name" required maxlength="40">
@@ -25,16 +29,16 @@
         <button class="btn btn-primary" type="submit">重置</button>
       </div>
     </form>
-  </div>
+  </section>
 
-  <div class="card" id="doneCard" hidden>
+  <section class="card" id="doneCard" hidden>
     <div class="card-title">重置成功</div>
-    <p style="margin:0 0 var(--space-1);color:var(--c-text-2)">新的恢复码（请立即保存，旧恢复码已作废）：</p>
-    <div class="recovery-code" id="newRecovery"></div>
-    <div style="margin-top:var(--space-3)">
+    <p class="item-excerpt">新的恢复码（请立即保存，旧恢复码已作废）：</p>
+    <div class="recovery-code recovery-code-pop" id="newRecovery"></div>
+    <div style="margin-top:var(--space-4)">
       <a class="btn btn-primary" href="/login">去登录</a>
     </div>
-  </div>
+  </section>
 </main>
 <footer class="site-footer"></footer>
 <script type="module">

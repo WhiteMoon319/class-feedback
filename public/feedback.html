@@ -11,7 +11,7 @@
 <header class="site-header"></header>
 <main>
   <div id="detail"></div>
-  <div class="card">
+  <section class="card">
     <div class="card-title">回复</div>
     <div id="replies"></div>
     <form id="replyForm" hidden>
@@ -20,9 +20,11 @@
       <label id="anonRow" style="display:flex;gap:var(--space-2);align-items:center">
         <input type="checkbox" id="anonChk" style="width:auto"> 匿名回复（对外显示「班委」）
       </label>
-      <button class="btn btn-primary" type="submit">发送</button>
+      <div style="margin-top:var(--space-3)">
+        <button class="btn btn-primary" type="submit">发送</button>
+      </div>
     </form>
-  </div>
+  </section>
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
@@ -48,25 +50,25 @@
 
     $('#detail').innerHTML = `
       <div class="card">
-        <div class="item-head">
+        <div class="item-head" style="margin-bottom:var(--space-2)">
           <h1 class="page-title" style="margin:0">${escapeHtml(fb.title)}</h1>
           ${statusBadge(fb.status)}
         </div>
-        <div class="card-meta" style="margin:var(--space-2) 0 var(--space-3)">
+        <div class="card-meta" style="margin-bottom:var(--space-4)">
           <span>${escapeHtml(fb.alias)}</span><span>${fmtTime(fb.createdAt)}</span>
         </div>
-        <p style="margin:0;white-space:pre-wrap">${escapeHtml(fb.body)}</p>
-        <div id="statusOps" hidden style="margin-top:var(--space-3);gap:var(--space-2);align-items:center;flex-wrap:wrap">
+        <p class="item-excerpt">${escapeHtml(fb.body)}</p>
+        <div id="statusOps" hidden>
           <span class="card-meta">状态：</span>
           <button class="btn btn-sm" data-status="pending" type="button">待处理</button>
           <button class="btn btn-sm" data-status="in_review" type="button">处理中</button>
           <button class="btn btn-sm" data-status="resolved" type="button">已解决</button>
         </div>
-        <details class="menu" style="margin-top:var(--space-3)">
+        <details class="menu">
           <summary>举报这条反馈</summary>
           <div style="margin-top:var(--space-2)">
             <input type="text" id="reportReason" maxlength="500" placeholder="说明举报理由（2-500 字）" style="margin-bottom:var(--space-2)">
-            <button class="btn btn-sm btn-danger" id="reportBtn">提交举报</button>
+            <button class="btn btn-sm btn-danger" id="reportBtn" type="button">提交举报</button>
           </div>
         </details>
       </div>`;
@@ -76,8 +78,8 @@
         <div class="reply">
           <span class="reply-author">${escapeHtml(r.displayName)}</span>
           ${r.isCommittee ? '<span class="badge badge-committee">班委</span>' : ''}
-          <div class="card-meta" style="margin:2px 0 var(--space-1)"><span>${fmtTime(r.createdAt)}</span></div>
-          <div style="white-space:pre-wrap">${escapeHtml(r.body)}</div>
+          <div class="card-meta">${fmtTime(r.createdAt)}</div>
+          <p class="item-excerpt">${escapeHtml(r.body)}</p>
         </div>`).join('')
       : '<div class="empty" style="padding:var(--space-3) 0">暂无回复</div>';
 

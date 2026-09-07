@@ -10,8 +10,13 @@
 <body data-nav="/polls">
 <header class="site-header"></header>
 <main>
-  <h1 class="page-title">投票</h1>
-  <p class="page-sub">班级决议的投票表决。一人一票，截止前可改票；投票者身份对所有人不可见。</p>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">投票</h1>
+      <p class="page-sub">班级决议的投票表决。一人一票，截止前可改票；投票者身份对所有人不可见。</p>
+    </div>
+  </div>
+
   <div id="list"></div>
 </main>
 <footer class="site-footer"></footer>
@@ -35,14 +40,14 @@
           <a class="item-title" href="/poll?id=${p.id}">${escapeHtml(p.title)}</a>
           <span class="badge ${p.status === 'open' ? 'badge-in_review' : 'badge-resolved'}">${p.statusText}</span>
         </div>
-        <div class="card-meta" style="margin:var(--space-2) 0">
+        <div class="card-meta">
           <span>${escapeHtml(p.duty)} 发起</span>
           <span>${fmtTime(p.createdAt)}</span>
           <span>${p.status === 'open' ? countdown(p.expiresAt) : '已截止'}</span>
           <span>${p.hideResults && p.status === 'open' ? '结果截止后公开' : `${p.totalVotes} 人已投`}</span>
-          ${p.myVote != null ? `<span class="badge badge-committee">已投</span>` : ''}
+          ${p.myVote != null ? '<span class="badge badge-committee">已投</span>' : ''}
         </div>
-        <p style="margin:0;color:var(--c-text-2)">${escapeHtml((p.description || '').slice(0, 100))}</p>
+        <p class="item-excerpt">${escapeHtml((p.description || '').slice(0, 100))}</p>
       </div>`).join('') : '<div class="empty">还没有投票</div>';
     if (isCommittee()) {
       html = '<div class="card"><a class="btn btn-primary" href="/poll?new=1">发起新投票</a></div>' + html;

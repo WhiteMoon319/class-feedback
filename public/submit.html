@@ -10,21 +10,25 @@
 <body data-nav="/submit">
 <header class="site-header"></header>
 <main style="max-width:560px">
-  <h1 class="page-title">提交反馈</h1>
-  <p class="page-sub">本次提交将使用一个<strong>全新的随机笔名</strong>对外展示，与你的昵称和其他反馈互不关联。</p>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">提交反馈</h1>
+      <p class="page-sub">本次提交将使用一个<strong>全新的随机笔名</strong>对外展示，与你的昵称和其他反馈互不关联。</p>
+    </div>
+  </div>
 
-  <div class="card">
+  <section class="card">
     <form id="fbForm">
       <label for="title">标题（2-60 字）</label>
       <input type="text" id="title" required minlength="2" maxlength="60" placeholder="一句话概括问题">
       <label for="body">详细说明（5-4000 字）</label>
       <textarea id="body" required minlength="5" maxlength="4000" placeholder="说明情况、你的期望，或任何你认为班委需要知道的信息"></textarea>
-      <div class="notice notice-info" style="font-size:13px">
+      <div class="notice notice-info">
         请理性表达。违规内容会被隐藏，发布账号可被班委举报、由站长封禁。
       </div>
       <button class="btn btn-primary" type="submit">匿名提交</button>
     </form>
-  </div>
+  </section>
 </main>
 <footer class="site-footer"></footer>
 <script type="module">

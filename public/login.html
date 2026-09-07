@@ -10,10 +10,14 @@
 <body data-nav="/login">
 <header class="site-header"></header>
 <main style="max-width:420px">
-  <h1 class="page-title">登录</h1>
-  <p class="page-sub">使用你的昵称登录。忘记密码请用注册时保存的恢复码。</p>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">登录</h1>
+      <p class="page-sub">使用你的昵称登录。忘记密码请用注册时保存的恢复码。</p>
+    </div>
+  </div>
 
-  <div class="card">
+  <section class="card">
     <form id="loginForm">
       <label for="name">昵称</label>
       <input type="text" id="name" autocomplete="username" required maxlength="40">
@@ -21,15 +25,15 @@
       <input type="password" id="password" autocomplete="current-password" required maxlength="64">
       <div style="margin-top:var(--space-4);display:flex;gap:var(--space-2);align-items:center">
         <button class="btn btn-primary" type="submit">登录</button>
-        <a href="/register">用邀请码注册</a>
+        <a href="/register" style="font-size:13.5px">用邀请码注册</a>
       </div>
     </form>
-  </div>
+  </section>
 
-  <div class="card">
+  <section class="card">
     <div class="card-title">忘记密码？</div>
-    <a href="/reset">用恢复码重置密码</a>
-  </div>
+    <a href="/reset" style="font-size:13.5px">用恢复码重置密码</a>
+  </section>
 </main>
 <footer class="site-footer"></footer>
 <script type="module">

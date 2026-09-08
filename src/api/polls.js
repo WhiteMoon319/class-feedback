@@ -173,6 +173,23 @@ export async function vote(request, env, url, params) {
   return json({ ok: true, changed: !!before, optionIndex });
 }
 
+/** 班委提前截止投票：票数保留，仅把 expires_at 置为当前时间 */
+export async function closePoll(request, env, url, params) {
+  const staff = await requireStaff(request, env);
+  const id = intParam(params.id, '投票编号');
+  const before = await env.DB.prepare('SELECT id, title, expires_at FROM polls WHERE id = ?').bind(id).first();
+  if (!before) return fail(404, 'not_found', '投票不存在');
+  if (!isOpen(before)) return fail(409, 'already_closed', '投票已截止');
+
+  await env.DB.prepare("UPDATE polls SET expires_at = datetime('now') WHERE id = ?").bind(id).run();
+
+  await writeAudit(env.DB, {
+    actorMemberId: staff.id, actorRole: staff.role, action: 'poll_close',
+    targetType: 'poll', targetId: id, detail: { title: before.title },
+  });
+  return json({ ok: true });
+}
+
 export async function deletePoll(request, env, url, params) {
   const staff = await requireStaff(request, env);
   const id = intParam(params.id, '投票编号');

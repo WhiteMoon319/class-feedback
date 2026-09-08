@@ -246,6 +246,25 @@ export async function getAttachment(request, env, url, params) {
   });
 }
 
+/** 班委删除单个附件（DB 行 + R2 对象），用于传错图时精确移除 */
+export async function deleteAttachment(request, env, url, params) {
+  const member = await requireCommittee(request, env);
+  const id = intParam(params.id, '附件编号');
+  const row = await env.DB.prepare(
+    'SELECT id, announcement_id, r2_key FROM attachments WHERE id = ?',
+  ).bind(id).first();
+  if (!row) return fail(404, 'not_found', '附件不存在');
+
+  try { await env.MEDIA.delete(row.r2_key); } catch (e) { console.error('[announce] R2 删除失败', row.r2_key, e); }
+  await env.DB.prepare('DELETE FROM attachments WHERE id = ?').bind(id).run();
+
+  await writeAudit(env.DB, {
+    actorMemberId: member.id, actorRole: 'committee', action: 'attachment_delete',
+    targetType: 'attachment', targetId: id, detail: { announcementId: row.announcement_id },
+  });
+  return json({ ok: true });
+}
+
 export { CATEGORY_TEXT, CATEGORIES };
 
 /** 班费收支汇总（游客可读）：总收入 / 总支出 / 结余 / 笔数 */

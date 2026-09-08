@@ -99,15 +99,51 @@ export async function myFeedbacks(request, env, url) {
   const member = await requireMember(request, env);
   const { limit, offset } = pageParams(url);
   const rows = await env.DB.prepare(
-    `SELECT id, alias, title, body, status, created_at, updated_at
-     FROM feedbacks WHERE member_id = ? AND hidden = 0 ORDER BY id DESC LIMIT ? OFFSET ?`,
+    `SELECT id, alias, title, body, status, created_at, updated_at,
+            (SELECT COUNT(*) FROM replies r WHERE r.feedback_id = f.id AND r.hidden = 0) AS reply_count
+     FROM feedbacks f WHERE member_id = ? AND hidden = 0 ORDER BY id DESC LIMIT ? OFFSET ?`,
   ).bind(member.id, limit, offset).all();
   return json({
     ok: true,
-    items: (rows.results ?? []).map((r) => ({ ...feedbackView(r), body: r.body })),
+    items: (rows.results ?? []).map((r) => ({ ...feedbackView(r), body: r.body, replyCount: r.reply_count })),
     limit,
     offset,
   });
+}
+
+/** 作者撤回自己的反馈：已有班委回复时禁止（避免班委工作被抹掉）。
+ *  连带清理相关举报，审计日志保留撤回记录。 */
+export async function deleteFeedback(request, env, url, params) {
+  const member = await requireMember(request, env);
+  const id = intParam(params.id, '反馈编号');
+
+  const fb = await env.DB.prepare(
+    'SELECT id, member_id, alias, title FROM feedbacks WHERE id = ?',
+  ).bind(id).first();
+  if (!fb) return fail(404, 'not_found', '反馈不存在');
+  if (fb.member_id !== member.id) return fail(403, 'forbidden', '只能撤回自己提交的反馈');
+
+  const committeeReply = await env.DB.prepare(
+    'SELECT COUNT(*) AS n FROM replies WHERE feedback_id = ? AND is_committee = 1',
+  ).bind(id).first();
+  if ((committeeReply?.n ?? 0) > 0) {
+    return fail(403, 'has_reply', '班委已回复，无法撤回；如需删除请联系班委处理');
+  }
+
+  // 清理指向该反馈及其回复的举报，再删除反馈（回复由外键级联删除）
+  await env.DB.batch([
+    env.DB.prepare(
+      `DELETE FROM reports WHERE (target_type = 'feedback' AND target_id = ?)
+        OR (target_type = 'reply' AND target_id IN (SELECT id FROM replies WHERE feedback_id = ?))`,
+    ).bind(id, id),
+    env.DB.prepare('DELETE FROM feedbacks WHERE id = ?').bind(id),
+  ]);
+
+  await writeAudit(env.DB, {
+    actorMemberId: member.id, actorRole: member.role, action: 'feedback_withdraw',
+    targetType: 'feedback', targetId: id, detail: { alias: fb.alias, title: fb.title },
+  });
+  return json({ ok: true });
 }
 
 export async function createFeedback(request, env) {

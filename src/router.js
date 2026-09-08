@@ -30,6 +30,7 @@ const ROUTES = [
   ['POST', '/api/feedbacks/:id/replies', feedbacks.addReply],
   ['POST', '/api/feedbacks/:id/status', feedbacks.updateStatus],
   ['POST', '/api/feedbacks/:id/report', feedbacks.reportContent],
+  ['POST', '/api/feedbacks/:id/delete', feedbacks.deleteFeedback],
 
   // 班务公开（游客可读，班委可写）
   ['GET', '/api/announcements', announcements.listAnnouncements],
@@ -39,6 +40,7 @@ const ROUTES = [
   ['POST', '/api/announcements/:id/update', announcements.updateAnnouncement],
   ['POST', '/api/announcements/:id/delete', announcements.deleteAnnouncement],
   ['POST', '/api/announcements/:id/attachments', announcements.uploadAttachment],
+  ['POST', '/api/attachments/:id/delete', announcements.deleteAttachment],
   ['GET', '/api/attachments/:id', announcements.getAttachment],
 
   // 投票（决议的实质）
@@ -46,6 +48,7 @@ const ROUTES = [
   ['GET', '/api/polls/:id', polls.getPoll],
   ['POST', '/api/polls', polls.createPoll],
   ['POST', '/api/polls/:id/vote', polls.vote],
+  ['POST', '/api/polls/:id/close', polls.closePoll],
   ['POST', '/api/polls/:id/delete', polls.deletePoll],
 
   // 管理端

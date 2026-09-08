@@ -384,6 +384,46 @@ async function main() {
   const guestVote = await guest('POST', `/api/polls/${poll1.json.id}/vote`, { optionIndex: 0 });
   ok('游客不能投票', guestVote.status === 401);
 
+  // ---------- 新增功能（修改密码 / 成员管理 / 隐藏恢复 / 班费汇总） ----------
+  step('新增功能');
+  // 班费汇总（游客可读）
+  const finSum = await guest('GET', '/api/finance/summary');
+  ok('班费汇总可读', finSum.status === 200 && typeof finSum.json?.balance === 'number', JSON.stringify(finSum.json));
+
+  // 修改密码：错误旧密码被拒 → 正确旧密码成功 → 新密码可登录、旧密码失效
+  await signIn(identities.stu2.root, 'brand-new-pass');
+  const pwdBad = await call('POST', '/api/auth/password', { oldPassword: 'wrong-pass', newPassword: 'changed-pass-1' });
+  ok('旧密码错误被拒', pwdBad.status === 401, JSON.stringify(pwdBad.json));
+  const pwdOk = await call('POST', '/api/auth/password', { oldPassword: 'brand-new-pass', newPassword: 'changed-pass-1' });
+  ok('修改密码成功', pwdOk.status === 200, JSON.stringify(pwdOk.json));
+  jar = new Map();
+  const oldPwdLogin = await call('POST', '/api/auth/login', { name: identities.stu2.root, password: 'brand-new-pass' });
+  ok('旧密码失效', oldPwdLogin.status === 401);
+  const newPwdLogin = await call('POST', '/api/auth/login', { name: identities.stu2.root, password: 'changed-pass-1' });
+  ok('新密码可登录', newPwdLogin.status === 200);
+
+  // 成员列表：owner 可查，班委 403
+  await signIn(identities.owner.root, identities.owner.password);
+  const members = await call('GET', '/api/admin/members');
+  ok('维护者可查成员列表', members.status === 200 && members.json?.items?.length >= 4, `n=${members.json?.items?.length}`);
+  const memberSearch = await call('GET', `/api/admin/members?q=${encodeURIComponent(identities.comm.root)}`);
+  ok('成员按昵称搜索', memberSearch.json?.items?.length === 1, JSON.stringify(memberSearch.json));
+  await signIn(identities.comm.root, identities.comm.password);
+  const membersByComm = await call('GET', '/api/admin/members');
+  ok('班委无权查成员列表', membersByComm.status === 403);
+
+  // 隐藏内容列表 + 恢复
+  const hiddenBefore = await call('GET', '/api/admin/hidden');
+  ok('班委可查隐藏内容', hiddenBefore.status === 200, JSON.stringify(hiddenBefore.json));
+  // 隐藏一条反馈再恢复
+  const fbToHide = await call('POST', '/api/feedbacks', { title: '待隐藏测试', body: '这条反馈用于验证隐藏与恢复流程。' });
+  await call('POST', `/api/admin/feedbacks/${fbToHide.json.id}/hide`, { hidden: true });
+  const hiddenMid = await call('GET', '/api/admin/hidden');
+  ok('隐藏后出现在列表', hiddenMid.json?.feedbacks?.some((f) => f.id === fbToHide.json.id), JSON.stringify(hiddenMid.json?.feedbacks?.map(f => f.id)));
+  await call('POST', `/api/admin/feedbacks/${fbToHide.json.id}/hide`, { hidden: false });
+  const hiddenAfter = await call('GET', '/api/admin/hidden');
+  ok('恢复后从列表移除', !hiddenAfter.json?.feedbacks?.some((f) => f.id === fbToHide.json.id));
+
   // ---------- 限流 ----------
   step('限流');
   let limited = false;

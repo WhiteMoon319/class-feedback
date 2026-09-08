@@ -127,8 +127,11 @@
 
           ${isCommittee() ? `
             <details class="menu">
-              <summary>删除该投票</summary>
-              <button class="btn btn-sm btn-danger" id="delBtn" type="button" style="margin-top:var(--space-2)">确认删除</button>
+              <summary>管理投票</summary>
+              <div style="display:flex;gap:var(--space-2);margin-top:var(--space-2);flex-wrap:wrap">
+                ${open ? '<button class="btn btn-sm" id="closeBtn" type="button">提前截止</button>' : ''}
+                <button class="btn btn-sm btn-danger" id="delBtn" type="button">删除投票</button>
+              </div>
             </details>` : ''}
         </section>`;
 
@@ -165,6 +168,18 @@
             location.href = '/polls';
           } catch (err) { toast(err.message); $('#delBtn').disabled = false; }
         }, '再点一次确认删除');
+      });
+
+      // 提前截止：票数保留，仅结束投票
+      $('#closeBtn')?.addEventListener('click', () => {
+        armDangerButton($('#closeBtn'), async () => {
+          $('#closeBtn').disabled = true;
+          try {
+            await api('POST', `/api/polls/${id}/close`);
+            toast('投票已截止');
+            setTimeout(() => location.reload(), 500);
+          } catch (err) { toast(err.message); $('#closeBtn').disabled = false; }
+        }, '再点一次确认截止');
       });
     }
   }

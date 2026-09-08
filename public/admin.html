@@ -50,6 +50,10 @@
         </label>
         <label for="pimages">凭证图片（可多选，JPG/PNG/WebP，单张 ≤5MB）</label>
         <input type="file" id="pimages" accept="image/jpeg,image/png,image/webp" multiple>
+        <div id="editAttachments" hidden>
+          <label>已有附件（点击图片可删除）</label>
+          <div class="attachments" id="editAttachmentsList"></div>
+        </div>
         <div style="margin-top:var(--space-3);display:flex;gap:var(--space-2)">
           <button class="btn btn-primary" type="submit" id="pubSubmit">发布</button>
           <button class="btn" type="button" id="cancelEdit" hidden>取消编辑</button>
@@ -244,11 +248,23 @@
     $('#pubTitle').textContent = '新发布';
     $('#pubSubmit').textContent = '发布';
     $('#cancelEdit').hidden = true;
+    $('#editAttachments').hidden = true;
+    $('#editAttachmentsList').innerHTML = '';
     $('#ptitle').value = '';
     $('#pbody').value = '';
     $('#pamount').value = '';
     $('#ppinned').checked = false;
     $('#pimages').value = '';
+  }
+
+  async function loadEditAttachments(id) {
+    try {
+      const r = await api('GET', `/api/announcements/${id}`);
+      const atts = r.announcement.attachments ?? [];
+      $('#editAttachments').hidden = atts.length === 0;
+      $('#editAttachmentsList').innerHTML = atts.map((att) => `
+        <img src="${att.url}" alt="${escapeHtml(att.filename)}" data-delatt="${att.id}" title="点击删除该附件" loading="lazy">`).join('');
+    } catch { /* 附件加载失败不阻塞编辑 */ }
   }
 
   function startEdit(a) {
@@ -262,6 +278,7 @@
     $('#pbody').value = a.body;
     $('#pamount').value = a.amount || '';
     $('#ppinned').checked = !!a.pinned;
+    loadEditAttachments(a.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -363,6 +380,17 @@
         await api('POST', `/api/admin/members/${banBtn.dataset.ban}/ban`, { banned: next });
         toast(next ? '已封禁' : '已解封');
         loadMembers();
+      } catch (err) { toast(err.message); }
+      return;
+    }
+    // 编辑模式下点附件图片删除
+    const delAtt = e.target.closest('[data-delatt]');
+    if (delAtt) {
+      try {
+        await api('POST', `/api/attachments/${delAtt.dataset.delatt}/delete`);
+        toast('附件已删除');
+        delAtt.remove();
+        if (!$('#editAttachmentsList').children.length) $('#editAttachments').hidden = true;
       } catch (err) { toast(err.message); }
     }
   });

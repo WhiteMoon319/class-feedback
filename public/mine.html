@@ -26,7 +26,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, refreshMe, api, escapeHtml, statusBadge, fmtTime, requireLoginPage, toast, skeleton, errorBox, initReveal, renderPager, $ } from '/js/app.js?v=20260908b';
+  import { init, refreshMe, api, escapeHtml, statusBadge, fmtTime, requireLoginPage, toast, skeleton, errorBox, initReveal, renderPager, armDangerButton, $ } from '/js/app.js?v=20260908b';
   init();
   if (requireLoginPage()) {
     await refreshMe();
@@ -48,8 +48,12 @@
           <div class="card-meta">
             <span>对外笔名：${escapeHtml(f.alias)}</span>
             <span>${fmtTime(f.createdAt)}</span>
+            <span>${f.replyCount ?? 0} 条回复</span>
           </div>
           <p class="item-excerpt">${escapeHtml(f.body.length > 80 ? f.body.slice(0, 80) + '…' : f.body)}</p>
+          <div class="page-head-actions" style="margin-top:var(--space-3)">
+            <button class="btn btn-sm" data-withdraw="${f.id}" type="button">撤回</button>
+          </div>
         </div>`).join('');
       initReveal('#list');
     }
@@ -73,6 +77,20 @@
 
     $('#list').innerHTML = skeleton(3);
     load();
+
+    // 撤回自己的反馈（已有班委回复时后端会拒绝并提示）
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-withdraw]');
+      if (!btn) return;
+      armDangerButton(btn, async () => {
+        btn.disabled = true;
+        try {
+          await api('POST', `/api/feedbacks/${btn.dataset.withdraw}/delete`);
+          toast('已撤回');
+          load(1);
+        } catch (err) { toast(err.message); btn.disabled = false; }
+      }, '再点一次确认撤回');
+    });
   }
 </script>
 </body>

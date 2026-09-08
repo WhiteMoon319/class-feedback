@@ -48,20 +48,33 @@
   </section>
 
   <section class="card">
+    <div class="card-title">你的账号</div>
+    <ul style="margin:0;padding-left:1.4em">
+      <li>注册后获得昵称（可自定义或随机），昵称即登录名，请与密码一并保存</li>
+      <li>「账号设置」页可修改密码：改密后其他设备的登录立即失效，当前设备保持登录</li>
+      <li>忘记密码时，凭注册时保存的恢复码重置；恢复码一次性使用，重置后发放新的</li>
+      <li>封禁状态下的账号不能登录、提交、撤回或重置密码</li>
+    </ul>
+  </section>
+
+  <section class="card">
     <div class="card-title">内容治理</div>
     <ul style="margin:0;padding-left:1.4em">
       <li>每条反馈和回复都可以被登录用户举报</li>
+      <li><strong>作者可撤回自己提交的反馈</strong>：班委尚未回复时可自行撤回（连带删除）；已收到班委回复后不能撤回，避免班委的处理工作被抹掉</li>
       <li>班委可处理举报：隐藏违规内容、或封禁发布账号（按根假名封禁，与对外笔名无关）</li>
+      <li>误隐藏的内容可在管理端恢复；班务图片可单张删除；投票可提前截止（票数保留）</li>
       <li>封禁后无法再提交内容，历史内容保留或按需隐藏</li>
     </ul>
   </section>
 
   <section class="card">
     <div class="card-title">技术</div>
-    <p class="item-excerpt">
-      托管于 Cloudflare Workers，数据存 D1，图片存 R2，均在同一账号下。
-      无第三方依赖、无统计脚本。源码遵循 AGPL-3.0 开放。
-    </p>
+    <ul style="margin:0;padding-left:1.4em">
+      <li>托管于 Cloudflare Workers，数据存 D1，图片存 R2，均在同一账号下</li>
+      <li>无第三方依赖、无统计脚本，源码遵循 AGPL-3.0 开放</li>
+      <li>数据定期导出备份；审计日志的哈希链可随时校验，确认历史未被改写</li>
+    </ul>
   </section>
 </main>
 <footer class="site-footer"></footer>

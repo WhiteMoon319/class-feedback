@@ -130,6 +130,12 @@ export async function deleteFeedback(request, env, url, params) {
     return fail(403, 'has_reply', '班委已回复，无法撤回；如需删除请联系班委处理');
   }
 
+  // 审计先行：破坏性操作若先删后审计，审计失败会留下「无记录的操作」
+  await writeAudit(env.DB, {
+    actorMemberId: member.id, actorRole: member.role, action: 'feedback_withdraw',
+    targetType: 'feedback', targetId: id, detail: { alias: fb.alias, title: fb.title },
+  });
+
   // 清理指向该反馈及其回复的举报，再删除反馈（回复由外键级联删除）
   await env.DB.batch([
     env.DB.prepare(
@@ -139,10 +145,6 @@ export async function deleteFeedback(request, env, url, params) {
     env.DB.prepare('DELETE FROM feedbacks WHERE id = ?').bind(id),
   ]);
 
-  await writeAudit(env.DB, {
-    actorMemberId: member.id, actorRole: member.role, action: 'feedback_withdraw',
-    targetType: 'feedback', targetId: id, detail: { alias: fb.alias, title: fb.title },
-  });
   return json({ ok: true });
 }
 

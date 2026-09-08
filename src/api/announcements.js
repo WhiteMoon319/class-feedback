@@ -176,12 +176,13 @@ export async function deleteAnnouncement(request, env, url, params) {
   const before = await env.DB.prepare('SELECT id, title, category FROM announcements WHERE id = ?').bind(id).first();
   if (!before) return fail(404, 'not_found', '内容不存在');
 
-  // 先清 R2 对象再删行；孤儿对象由 key 前缀可枚举，量小可人工清理
+  // 先删 DB 行（附件行由外键级联删除）再删 R2 对象：
+  // DB 失败时图片仍在可重试；反序会留下悬空引用
   const atts = await env.DB.prepare('SELECT r2_key FROM attachments WHERE announcement_id = ?').bind(id).all();
-  for (const a of atts.results ?? []) {
-    try { await env.MEDIA.delete(a.r2_key); } catch (e) { console.error('[announce] R2 删除失败', a.r2_key, e); }
-  }
   await env.DB.prepare('DELETE FROM announcements WHERE id = ?').bind(id).run();
+  for (const a of atts.results ?? []) {
+    try { await env.MEDIA.delete(a.r2_key); } catch (e) { console.error('[announce] R2 删除失败（孤儿对象）', a.r2_key, e); }
+  }
 
   await writeAudit(env.DB, {
     actorMemberId: member.id, actorRole: 'committee', action: 'announcement_delete',
@@ -255,8 +256,10 @@ export async function deleteAttachment(request, env, url, params) {
   ).bind(id).first();
   if (!row) return fail(404, 'not_found', '附件不存在');
 
-  try { await env.MEDIA.delete(row.r2_key); } catch (e) { console.error('[announce] R2 删除失败', row.r2_key, e); }
+  // 先删 DB 行再删 R2 对象：DB 失败时图片仍在（可重试）；
+  // 反序则在 DB 失败后留下悬空引用（用户看到附件但取不到图）
   await env.DB.prepare('DELETE FROM attachments WHERE id = ?').bind(id).run();
+  try { await env.MEDIA.delete(row.r2_key); } catch (e) { console.error('[announce] R2 删除失败（孤儿对象，无引用）', row.r2_key, e); }
 
   await writeAudit(env.DB, {
     actorMemberId: member.id, actorRole: 'committee', action: 'attachment_delete',

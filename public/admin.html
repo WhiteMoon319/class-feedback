@@ -391,6 +391,7 @@
         toast('附件已删除');
         delAtt.remove();
         if (!$('#editAttachmentsList').children.length) $('#editAttachments').hidden = true;
+        loadRecent(); // 同步刷新卡片上的附件计数
       } catch (err) { toast(err.message); }
     }
   });

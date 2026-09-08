@@ -49,9 +49,11 @@
     "SITE_NAME": "班务平台",
     "SITE_URL": "https://class.whitemoon319.xyz",
     "ATTACHMENT_MAX_BYTES": 5242880
-    // 限流阈值不在此定义：生产用代码默认值（登录 10 次/300s、提交 10 次/3600s、
-    // 注册 8 次/3600s、登录名 5 次/900s）；本地开发放宽请写 .dev.vars
-    // （LOGIN_RATE_LIMIT_MAX 等），避免与模板 vars 产生优先级冲突。
+    // 限流阈值由代码默认值提供（登录 10 次/300s、提交 10 次/3600s、
+    // 注册 8 次/3600s、登录名 5 次/900s）。如需生产调整，在此显式声明：
+    //   "LOGIN_RATE_LIMIT_MAX": "20", "LOGIN_RATE_LIMIT_WINDOW": "300",
+    //   "SUBMIT_RATE_LIMIT_MAX": "20", "REGISTRATION_RATE_LIMIT_MAX": "10"
+    // 注意：此处声明会覆盖本地 .dev.vars 同名值（本地放宽需临时注释掉）。
   },
 
   "observability": {

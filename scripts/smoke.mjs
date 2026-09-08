@@ -424,6 +424,53 @@ async function main() {
   const hiddenAfter = await call('GET', '/api/admin/hidden');
   ok('恢复后从列表移除', !hiddenAfter.json?.feedbacks?.some((f) => f.id === fbToHide.json.id));
 
+  // ---------- 能力补全（撤回 / 附件删除 / 提前截止 / 回复数） ----------
+  step('能力补全');
+  // 撤回：无班委回复可撤回；有班委回复被拒
+  await signIn(identities.stu2.root, 'changed-pass-1');
+  const fbW = await call('POST', '/api/feedbacks', { title: '待撤回测试', body: '这条反馈用于验证作者撤回能力。' });
+  const mineBefore = await call('GET', '/api/my/feedbacks?limit=50');
+  ok('我的反馈返回回复数', mineBefore.json?.items?.every((i) => typeof i.replyCount === 'number'), JSON.stringify(mineBefore.json?.items?.[0]));
+  const withdrawOk = await call('POST', `/api/feedbacks/${fbW.json.id}/delete`);
+  ok('作者可撤回未被回复的反馈', withdrawOk.status === 200, JSON.stringify(withdrawOk.json));
+  const withdrawAgain = await call('POST', `/api/feedbacks/${fbW.json.id}/delete`);
+  ok('重复撤回返回 404', withdrawAgain.status === 404);
+
+  // 有班委回复的反馈不可撤回
+  await signIn('奶茶三分糖', 'custom-pass-1');
+  const fbW2 = await call('POST', '/api/feedbacks', { title: '有回复的反馈', body: '这条反馈会被班委回复后尝试撤回。' });
+  await signIn(identities.comm.root, identities.comm.password);
+  await call('POST', `/api/feedbacks/${fbW2.json.id}/replies`, { body: '已收到，正在处理。' });
+  await signIn('奶茶三分糖', 'custom-pass-1');
+  const withdrawBlocked = await call('POST', `/api/feedbacks/${fbW2.json.id}/delete`);
+  ok('有班委回复时撤回被拒', withdrawBlocked.status === 403 && withdrawBlocked.json?.code === 'has_reply', JSON.stringify(withdrawBlocked.json));
+
+  // 附件删除：上传 → 删除 → 详情里不再出现
+  await signIn(identities.comm.root, identities.comm.password);
+  const annAtt = await call('POST', '/api/announcements', { category: 'finance', title: '附件删除测试', body: '用于验证单张附件删除。', amount: '-1.00', direction: 'expense' });
+  const formA = new FormData();
+  formA.append('file', new Blob([PNG_1PX], { type: 'image/png' }), 'del-test.png');
+  const upA = await call('POST', `/api/announcements/${annAtt.json.id}/attachments`, formA);
+  const delAtt = await call('POST', `/api/attachments/${upA.json.id}/delete`);
+  ok('单张附件可删除', delAtt.status === 200, JSON.stringify(delAtt.json));
+  const annAfter = await call('GET', `/api/announcements/${annAtt.json.id}`);
+  ok('删除后详情不再含该附件', (annAfter.json?.announcement?.attachments?.length ?? 0) === 0);
+
+  // 投票提前截止：票数保留、状态变 closed、不能再投
+  const pollC = await call('POST', '/api/polls', { title: '提前截止测试', options: ['甲', '乙'], expiresAt: future });
+  await signIn('奶茶三分糖', 'custom-pass-1');
+  await call('POST', `/api/polls/${pollC.json.id}/vote`, { optionIndex: 0 });
+  await signIn(identities.comm.root, identities.comm.password);
+  const closeRes = await call('POST', `/api/polls/${pollC.json.id}/close`);
+  ok('班委可提前截止', closeRes.status === 200, JSON.stringify(closeRes.json));
+  const closedView = await call('GET', `/api/polls/${pollC.json.id}`);
+  ok('截止后状态为 closed 且票数保留', closedView.json?.poll?.status === 'closed' && closedView.json?.poll?.totalVotes === 1,
+    JSON.stringify({ status: closedView.json?.poll?.status, total: closedView.json?.poll?.totalVotes }));
+  const voteAfterClose = await call('POST', `/api/polls/${pollC.json.id}/vote`, { optionIndex: 1 });
+  ok('截止后不能投票', voteAfterClose.status === 403);
+  const closeAgain = await call('POST', `/api/polls/${pollC.json.id}/close`);
+  ok('重复截止被拒', closeAgain.status === 409);
+
   // ---------- 限流 ----------
   step('限流');
   let limited = false;

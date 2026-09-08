@@ -94,6 +94,50 @@ node scripts/bootstrap-owner.mjs                 # 生成首个 owner 邀请码�
 
 **首次引导**：平台没有「注册入口之外」的账号——第一个维护者账号必须由 `bootstrap-owner.mjs` 创建的 owner 邀请码注册，之后班委码由维护者在管理端生成。
 
+## 运维
+
+### 数据备份
+
+```bash
+# D1 全库导出（结构化 SQL，可用于恢复）
+npx wrangler d1 export class-feedback-db --remote --output=backup-$(date +%F).sql
+
+# 审计日志快照（哈希链最新哈希，用于日后校验历史未被改写）
+npx wrangler d1 execute class-feedback-db --remote \
+  --command "SELECT id, hash, ts FROM audit_logs ORDER BY id DESC LIMIT 1"
+
+# R2 图片：按 key 逐个下载（班级量小，或使用 rclone 配置 R2 远端批量同步）
+npx wrangler r2 object get class-feedback-media/announcements/<id>/<key>.png --file=backup.png
+```
+
+建议频率：每学期一次全量导出 + 重大班务变更后导出一次。备份文件含根假名与业务数据，**不要提交到仓库或公开分享**。
+
+### 恢复
+
+```bash
+npx wrangler d1 execute class-feedback-db --remote --file=backup-YYYY-MM-DD.sql
+```
+
+### 密钥轮换
+
+`SESSION_SECRET` 轮换会使所有会话立即失效（用户需重新登录），审计哈希链不受影响：
+
+```bash
+npx wrangler secret put SESSION_SECRET    # 输入新的随机 32+ 字节
+```
+
+### 限流阈值调整
+
+阈值由代码默认值提供（登录 10 次/300s、提交 10 次/3600s、注册 8 次/3600s）。
+如需生产调整，在 `wrangler.jsonc` 的 `vars` 中显式声明（注意：会覆盖本地 `.dev.vars` 的同名值）：
+
+```jsonc
+"vars": {
+  "LOGIN_RATE_LIMIT_MAX": "20",
+  "LOGIN_RATE_LIMIT_WINDOW": "300"
+}
+```
+
 ## 冒烟测试覆盖
 
 匿名不变量（列表/详情无 member_id、无根假名）、双层笔名、权限矩阵（学生/班委/维护者）、封禁与举报处理、审计哈希链完整性与可见性、恢复码重置、R2 图片白名单、限流、投票（一人一票/改票/隐藏票数）、页码分页数据契约。

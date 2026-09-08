@@ -471,6 +471,17 @@ details.menu summary:hover { color: var(--c-text-2); }
   to { transform: scaleX(1); }
 }
 
+/* ============ 邀请码链接行 ============ */
+.invite-rows { margin-top: var(--space-2); }
+.invite-row {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  flex-wrap: wrap;
+  padding: var(--space-1) 0;
+}
+.invite-row .card-meta { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+
 /* ============ 状态流转按钮组 ============ */
 #statusOps { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-3); }
 #statusOps[hidden] { display: none; }

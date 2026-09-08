@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>管理 · 班务平台</title>
-<link rel="stylesheet" href="/css/tokens.css?v=20260908b">
-<link rel="stylesheet" href="/css/base.css?v=20260908b">
+<link rel="stylesheet" href="/css/tokens.css?v=20260908c">
+<link rel="stylesheet" href="/css/base.css?v=20260908c">
 </head>
 <body data-nav="/admin">
 <header class="site-header"></header>
@@ -130,7 +130,7 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, refreshMe, api, escapeHtml, fmtTime, isCommittee, toast, armDangerButton, $, $$ } from '/js/app.js?v=20260908b';
+  import { init, refreshMe, api, escapeHtml, fmtTime, isCommittee, toast, armDangerButton, $, $$ } from '/js/app.js?v=20260908c';
   init();
 
   const me = await refreshMe();
@@ -217,10 +217,20 @@
           type: $('#itype').value, count: Number($('#icount').value),
           duty: $('#itype').value === 'committee' ? $('#iduty').value.trim() : undefined,
         });
+        const links = r.codes.map((c) => `${location.origin}/register?code=${c}`);
         $('#newCodes').innerHTML = `
           <div class="notice notice-info">
-            已生成 ${r.codes.length} 个 ${r.expiresDays} 天内有效的邀请码：
-            <div style="margin-top:var(--space-2)">${r.codes.map((c) => `<div class="code">${escapeHtml(c)}</div>`).join('')}</div>
+            已生成 ${r.codes.length} 个 ${r.expiresDays} 天内有效的${r.type === 'student' ? '学生' : r.duty ? `班委（${escapeHtml(r.duty)}）` : '维护者'}邀请码。
+            ${r.type === 'student' ? '链接可直接发班级群，同学点开即自动填码。' : '班委码/维护者码请私发给对应的人，不要发进群。'}
+            <div class="invite-rows" data-links="${escapeHtml(links.join('\n'))}">
+              ${r.codes.map((c, i) => `
+                <div class="invite-row">
+                  <span class="code">${escapeHtml(c)}</span>
+                  <span class="card-meta">${escapeHtml(links[i])}</span>
+                  <button class="btn btn-sm" data-copylink="${escapeHtml(links[i])}" type="button">复制链接</button>
+                </div>`).join('')}
+            </div>
+            ${r.codes.length > 1 ? '<button class="btn btn-sm" id="copyAllBtn" type="button">复制全部链接</button>' : ''}
           </div>`;
         loadInvites();
       } catch (err) { toast(err.message); }
@@ -381,6 +391,19 @@
         toast(next ? '已封禁' : '已解封');
         loadMembers();
       } catch (err) { toast(err.message); }
+      return;
+    }
+    // 复制邀请链接
+    const copyLink = e.target.closest('[data-copylink]');
+    if (copyLink) {
+      try { await navigator.clipboard.writeText(copyLink.dataset.copylink); toast('链接已复制'); }
+      catch { toast('复制失败，请手动长按选择'); }
+      return;
+    }
+    if (e.target.closest('#copyAllBtn')) {
+      const all = $('.invite-rows')?.dataset?.links || '';
+      try { await navigator.clipboard.writeText(all); toast(`已复制 ${all.split('\n').length} 条链接`); }
+      catch { toast('复制失败'); }
       return;
     }
     // 编辑模式下点附件图片删除

@@ -162,6 +162,21 @@ async function main() {
   const customBad = await call('POST', '/api/auth/register', { inviteCode: codeC, password: 'custom-pass-3', displayName: '123456' });
   ok('纯数字昵称被拒', customBad.status === 400 && customBad.json?.code === 'invalid_field', JSON.stringify(customBad.json));
 
+  // ---------- 邀请链接预校验（游客可读 + 隐私边界） ----------
+  step('邀请链接校验');
+  const chkAvail = await guest('GET', `/api/invites/${codeC}`);
+  ok('校验可用码返回类型', chkAvail.json?.state === 'available' && chkAvail.json?.type === 'student', JSON.stringify(chkAvail.json));
+  const chkUsed = await guest('GET', `/api/invites/${SEED.stu1}`);
+  ok('校验已使用码', chkUsed.json?.state === 'used', JSON.stringify(chkUsed.json));
+  const chkMissing = await guest('GET', '/api/invites/ZZZZ-ZZZZ-ZZZZ');
+  ok('校验不存在的码', chkMissing.json?.state === 'not_found');
+  const chkBad = await guest('GET', '/api/invites/' + encodeURIComponent('；DROP TABLE'));
+  ok('非法码格式安全处理', chkBad.json?.state === 'not_found', JSON.stringify(chkBad.json));
+  // 隐私边界：校验接口绝不暴露使用者（used_by / member / 根假名）
+  ok('校验响应不含使用者信息',
+    !chkUsed.text.includes('used_by') && !chkUsed.text.includes('member') && !chkUsed.text.includes(identities.stu1.root),
+    chkUsed.text);
+
   // ---------- 反馈与笔名 ----------
   step('反馈工单流');
   await signIn(identities.stu1.root, identities.stu1.password);

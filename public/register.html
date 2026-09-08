@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>注册 · 班务平台</title>
-<link rel="stylesheet" href="/css/tokens.css?v=20260908b">
-<link rel="stylesheet" href="/css/base.css?v=20260908b">
+<link rel="stylesheet" href="/css/tokens.css?v=20260908c">
+<link rel="stylesheet" href="/css/base.css?v=20260908c">
 </head>
 <body data-nav="/login">
 <header class="site-header"></header>
@@ -21,6 +21,7 @@
     <form id="regForm">
       <label for="invite">邀请码</label>
       <input type="text" id="invite" placeholder="XXXX-XXXX-XXXX" required maxlength="32" style="text-transform:uppercase">
+      <div id="inviteStatus"></div>
       <label for="nick">昵称（登录名；留空则随机生成）</label>
       <div style="display:flex;gap:var(--space-2)">
         <input type="text" id="nick" maxlength="20" placeholder="如：奶茶三分糖" autocomplete="username">
@@ -51,8 +52,39 @@
 </main>
 <footer class="site-footer"></footer>
 <script type="module">
-  import { init, api, setCachedMe, toast, afterLoginGo, $ } from '/js/app.js?v=20260908b';
+  import { init, api, setCachedMe, toast, afterLoginGo, qs, escapeHtml, $ } from '/js/app.js?v=20260908c';
   init();
+
+  // ---------- 邀请链接预校验：?code= 自动填码并查询状态 ----------
+  const TYPE_TEXT = { student: '学生邀请码', committee: '班委邀请码', owner: '站点维护者邀请码' };
+  const STATE_TEXT = {
+    available: (t, duty) => `✓ ${TYPE_TEXT[t] || '邀请码'}有效${duty ? `（职务：${duty}）` : ''}，设置密码即可注册`,
+    used: () => '该邀请码已被使用，请向班长索取新的邀请码',
+    void: () => '该邀请码已作废，请向班长索取新的邀请码',
+    expired: () => '该邀请码已过期，请向班长索取新的邀请码',
+    not_found: () => '邀请码不存在，请检查链接是否完整',
+  };
+
+  async function checkInvite(code) {
+    const el = $('#inviteStatus');
+    if (!code) { el.innerHTML = ''; return; }
+    el.innerHTML = '<div class="card-meta">正在校验邀请码…</div>';
+    try {
+      const r = await api('GET', `/api/invites/${encodeURIComponent(code)}`, undefined, { silent: true });
+      const text = STATE_TEXT[r.state] ? STATE_TEXT[r.state](r.type, r.duty) : `邀请码状态：${r.state}`;
+      el.innerHTML = `<div class="notice ${r.state === 'available' ? 'notice-info' : 'notice-danger'}">${escapeHtml(text)}</div>`;
+    } catch {
+      el.innerHTML = '';
+    }
+  }
+
+  const preCode = (qs('code') || '').trim().toUpperCase();
+  if (preCode) {
+    $('#invite').value = preCode;
+    checkInvite(preCode);
+  }
+  // 手动改码时重新校验（防粘贴错码后白填表单）
+  $('#invite').addEventListener('change', () => checkInvite($('#invite').value.trim().toUpperCase()));
 
   $('#regForm').addEventListener('submit', async (e) => {
     e.preventDefault();

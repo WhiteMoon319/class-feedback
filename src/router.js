@@ -9,10 +9,14 @@ import * as feedbacks from './api/feedbacks.js';
 import * as announcements from './api/announcements.js';
 import * as admin from './api/admin.js';
 import * as polls from './api/polls.js';
+import * as invites from './api/invites.js';
 import { json } from './lib/http.js';
 
 const ROUTES = [
   ['GET', '/api/health', () => json({ ok: true, ts: new Date().toISOString() })],
+
+  // 邀请链接预校验（游客可读，仅返回状态与类型，不含使用者）
+  ['GET', '/api/invites/:code', invites.checkInvite],
 
   // 注册与登录
   ['POST', '/api/auth/register', auth.register],

@@ -29,6 +29,11 @@
     "html_handling": "auto-trailing-slash"
   },
 
+  // 自定义域：部署时自动绑定（需 whitemoon319.xyz 在本账号 DNS 下）
+  "routes": [
+    { "pattern": "class.whitemoon319.xyz", "custom_domain": true }
+  ],
+
   "d1_databases": [
     {
       "binding": "DB",

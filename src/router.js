@@ -19,6 +19,7 @@ const ROUTES = [
   ['POST', '/api/auth/login', auth.login],
   ['POST', '/api/auth/logout', auth.logout],
   ['POST', '/api/auth/reset', auth.resetPassword],
+  ['POST', '/api/auth/password', auth.changePassword],
   ['GET', '/api/auth/me', auth.me],
 
   // 反馈工单（列表与详情对游客只读开放）
@@ -33,6 +34,7 @@ const ROUTES = [
   // 班务公开（游客可读，班委可写）
   ['GET', '/api/announcements', announcements.listAnnouncements],
   ['GET', '/api/announcements/:id', announcements.getAnnouncement],
+  ['GET', '/api/finance/summary', announcements.financeSummary],
   ['POST', '/api/announcements', announcements.createAnnouncement],
   ['POST', '/api/announcements/:id/update', announcements.updateAnnouncement],
   ['POST', '/api/announcements/:id/delete', announcements.deleteAnnouncement],
@@ -56,6 +58,9 @@ const ROUTES = [
   ['POST', '/api/admin/feedbacks/:id/hide', admin.hideFeedback],
   ['GET', '/api/admin/audit', admin.listAudit],
   ['GET', '/api/admin/audit/verify', admin.checkChain],
+  ['GET', '/api/admin/members', admin.listMembers],
+  ['GET', '/api/admin/hidden', admin.listHidden],
+  ['POST', '/api/admin/replies/:id/hide', admin.hideReply],
 ];
 
 const COMPILED = ROUTES.map(([method, path, handler]) => ({

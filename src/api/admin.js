@@ -269,3 +269,56 @@ export async function checkChain(request, env) {
   const result = await verifyChain(env.DB);
   return json({ ok: true, chain: result });
 }
+
+/** 成员列表（仅维护者）：根假名 + 角色/职务/封禁状态，支持按昵称模糊搜索 */
+export async function listMembers(request, env, url) {
+  await requireOwner(request, env);
+  const q = (url.searchParams.get('q') || '').trim().slice(0, 40);
+  const rows = await env.DB.prepare(
+    `SELECT id, display_name, role, duty, banned, created_at FROM members
+     ${q ? 'WHERE display_name LIKE ?' : ''}
+     ORDER BY banned DESC, id DESC LIMIT 200`,
+  ).bind(...(q ? [`%${q}%`] : [])).all();
+  return json({
+    ok: true,
+    items: (rows.results ?? []).map((m) => ({
+      id: m.id, displayName: m.display_name, role: m.role, duty: m.duty,
+      banned: !!m.banned, createdAt: m.created_at,
+    })),
+  });
+}
+
+/** 已隐藏内容列表（班委可查，用于恢复误隐藏） */
+export async function listHidden(request, env) {
+  await requireStaff(request, env);
+  const [fbs, reps] = await env.DB.batch([
+    env.DB.prepare('SELECT id, title, alias, created_at FROM feedbacks WHERE hidden = 1 ORDER BY id DESC LIMIT 100'),
+    env.DB.prepare('SELECT id, feedback_id, display_name, body, created_at FROM replies WHERE hidden = 1 ORDER BY id DESC LIMIT 100'),
+  ]);
+  return json({
+    ok: true,
+    feedbacks: (fbs.results ?? []).map((f) => ({
+      id: f.id, title: f.title, alias: f.alias, createdAt: f.created_at,
+    })),
+    replies: (reps.results ?? []).map((r) => ({
+      id: r.id, feedbackId: r.feedback_id, displayName: r.display_name,
+      body: r.body.slice(0, 80), createdAt: r.created_at,
+    })),
+  });
+}
+
+/** 回复的隐藏/恢复（与 hideFeedback 对称，补全恢复入口） */
+export async function hideReply(request, env, url, params) {
+  const staff = await requireStaff(request, env);
+  const id = intParam(params.id, '回复编号');
+  const body = await readJson(request);
+  const hidden = body.hidden === false ? 0 : 1;
+
+  const res = await env.DB.prepare('UPDATE replies SET hidden = ? WHERE id = ?').bind(hidden, id).run();
+  if (!res.meta.changes) return fail(404, 'not_found', '回复不存在');
+  await writeAudit(env.DB, {
+    actorMemberId: staff.id, actorRole: staff.role, action: hidden ? 'reply_hide' : 'reply_unhide',
+    targetType: 'reply', targetId: id,
+  });
+  return json({ ok: true, hidden: !!hidden });
+}

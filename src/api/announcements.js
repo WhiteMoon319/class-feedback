@@ -247,3 +247,23 @@ export async function getAttachment(request, env, url, params) {
 }
 
 export { CATEGORY_TEXT, CATEGORIES };
+
+/** 班费收支汇总（游客可读）：总收入 / 总支出 / 结余 / 笔数 */
+export async function financeSummary(request, env) {
+  const row = await env.DB.prepare(
+    `SELECT
+       COALESCE(SUM(CASE WHEN direction = 'income' THEN CAST(REPLACE(amount, ',', '') AS REAL) ELSE 0 END), 0) AS income,
+       COALESCE(SUM(CASE WHEN direction = 'expense' THEN ABS(CAST(REPLACE(amount, ',', '') AS REAL)) ELSE 0 END), 0) AS expense,
+       COUNT(*) AS count
+     FROM announcements WHERE category = 'finance' AND amount IS NOT NULL`,
+  ).first();
+  const income = Number(row?.income ?? 0);
+  const expense = Number(row?.expense ?? 0);
+  return json({
+    ok: true,
+    income: Math.round(income * 100) / 100,
+    expense: Math.round(expense * 100) / 100,
+    balance: Math.round((income - expense) * 100) / 100,
+    count: row?.count ?? 0,
+  });
+}

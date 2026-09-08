@@ -249,3 +249,36 @@ export async function resetPassword(request, env) {
     warning: '密码已重置，旧恢复码同时作废。请保存新的恢复码。',
   });
 }
+
+/** 已登录状态修改密码：验证旧密码 → 更新哈希 → 会话版本 +1（其他设备失效）
+ *  当前设备重新签发 cookie，避免自己也被登出 */
+export async function changePassword(request, env) {
+  const member = await requireMember(request, env);
+  const body = await readJson(request);
+  const oldPassword = typeof body.oldPassword === 'string' ? body.oldPassword : '';
+  const newPassword = checkPassword(body.newPassword);
+
+  const limit = await consume(env.DB, `pwd:${member.id}`, { max: 5, windowSec: 3600 });
+  if (!limit.ok) return fail(429, 'rate_limited', `修改过于频繁，请 ${limit.retryAfter} 秒后再试`);
+
+  if (!(await verifyPassword(oldPassword, member.password_hash))) {
+    return fail(401, 'bad_credentials', '当前密码不正确');
+  }
+
+  const nextVersion = member.session_version + 1;
+  await env.DB.prepare(
+    'UPDATE members SET password_hash = ?, session_version = ? WHERE id = ?',
+  ).bind(await hashPassword(newPassword), nextVersion, member.id).run();
+
+  await writeAudit(env.DB, {
+    actorMemberId: member.id, actorRole: member.role, action: 'password_change',
+    targetType: 'member', targetId: member.id,
+  });
+
+  const token = await signToken(env.SESSION_SECRET, member.id, nextVersion);
+  return setSessionCookie(
+    json({ ok: true, message: '密码已修改，其他设备需重新登录。' }),
+    token,
+    new URL(request.url).protocol === 'https:',
+  );
+}

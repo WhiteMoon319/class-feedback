@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>账号设置 · 班务平台</title>
+<link rel="stylesheet" href="/css/tokens.css?v=20260908b">
+<link rel="stylesheet" href="/css/base.css?v=20260908b">
+</head>
+<body data-nav="/mine">
+<header class="site-header"></header>
+<main style="max-width:460px">
+  <div id="backRow"></div>
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">账号设置</h1>
+      <p class="page-sub">修改密码后，其他设备上的登录会失效，当前设备保持登录。</p>
+    </div>
+  </div>
+
+  <section class="card" id="meCard" hidden>
+    <div class="card-title">我的账号</div>
+    <div class="card-meta">
+      <span>昵称：<strong id="meName"></strong></span>
+      <span id="meRole"></span>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="card-title">修改密码</div>
+    <form id="pwdForm">
+      <label for="oldPassword">当前密码</label>
+      <input type="password" id="oldPassword" autocomplete="current-password" required maxlength="64">
+      <label for="newPassword">新密码（8 位以上）</label>
+      <input type="password" id="newPassword" autocomplete="new-password" required minlength="8" maxlength="64">
+      <label for="confirmPassword">确认新密码</label>
+      <input type="password" id="confirmPassword" autocomplete="new-password" required minlength="8" maxlength="64">
+      <div style="margin-top:var(--space-4)">
+        <button class="btn btn-primary" type="submit">保存修改</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="card-title">忘记密码？</div>
+    <p class="item-excerpt">如果忘记了密码且无法登录，请用注册时保存的恢复码在<a href="/reset">重置页面</a>处理。</p>
+  </section>
+</main>
+<footer class="site-footer"></footer>
+<script type="module">
+  import { init, refreshMe, api, toast, renderBackLink, requireLoginPage, $ } from '/js/app.js?v=20260908b';
+  init();
+  $('#backRow').appendChild(renderBackLink('/mine', '返回我的反馈'));
+
+  if (requireLoginPage()) {
+    const me = await refreshMe();
+    if (me) {
+      $('#meCard').hidden = false;
+      $('#meName').textContent = me.displayName;
+      $('#meRole').textContent = me.role === 'owner' ? '站点维护者' : (me.role === 'committee' ? (me.duty || '班委') : '学生');
+    }
+
+    $('#pwdForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if ($('#newPassword').value !== $('#confirmPassword').value) {
+        toast('两次输入的新密码不一致');
+        return;
+      }
+      const btn = e.target.querySelector('button');
+      btn.disabled = true;
+      try {
+        const r = await api('POST', '/api/auth/password', {
+          oldPassword: $('#oldPassword').value,
+          newPassword: $('#newPassword').value,
+        });
+        toast(r.message || '密码已修改');
+        $('#pwdForm').reset();
+      } catch (err) {
+        toast(err.message);
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+</script>
+</body>
+</html>

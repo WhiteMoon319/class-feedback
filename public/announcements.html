@@ -24,6 +24,11 @@
     <button data-c="minutes">决议</button>
   </div>
 
+  <div class="card" id="financeCard" hidden>
+    <div class="card-title">班费汇总</div>
+    <div class="card-meta" id="financeStats"></div>
+  </div>
+
   <div id="list"></div>
   <div class="pager" id="pager"></div>
 </main>
@@ -62,6 +67,20 @@
   async function load(target = page) {
     page = target;
     $('#list').innerHTML = skeleton(4);
+    // 班费 tab 显示收支汇总
+    if (cat === 'finance') {
+      $('#financeCard').hidden = false;
+      try {
+        const s = await api('GET', '/api/finance/summary');
+        $('#financeStats').innerHTML = `
+          <span>收入 <span class="amount-income">¥${s.income.toFixed(2)}</span></span>
+          <span>支出 <span class="amount-expense">¥${s.expense.toFixed(2)}</span></span>
+          <span>结余 <strong style="color:${s.balance >= 0 ? 'var(--c-success)' : 'var(--c-danger)'}">¥${s.balance.toFixed(2)}</strong></span>
+          <span>共 ${s.count} 笔</span>`;
+      } catch { /* 汇总失败不影响列表 */ }
+    } else {
+      $('#financeCard').hidden = true;
+    }
     try {
       const r = await api('GET', `/api/announcements?limit=${PAGE_SIZE}&offset=${(page - 1) * PAGE_SIZE}${cat ? `&category=${cat}` : ''}`);
       total = r.total;
